@@ -3,10 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo api gateway running",
-    "build": "echo building api gateway",
+    "dev": "tsc -w",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "lint": "echo lint api gateway",
-    "typecheck": "echo typecheck api gateway",
+    "typecheck": "tsc --noEmit",
     "test": "echo test api gateway"
-  }
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.0",
+    "fastify": "^5.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {},
+  "type": "module"
 }
