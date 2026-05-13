@@ -11,3 +11,4 @@ turbo/
 
 # Runtime uploads
 apps/dashboard/uploads/
+.turbo/

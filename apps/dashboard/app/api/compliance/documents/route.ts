@@ -1,6 +1,7 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
+import { ComplianceDocumentType } from "@prisma/client";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
 
@@ -11,6 +12,10 @@ async function getUserOrganization(userId: string) {
   });
 
   return membership?.organization ?? null;
+}
+
+function isComplianceDocumentType(value: string): value is ComplianceDocumentType {
+  return Object.values(ComplianceDocumentType).includes(value as ComplianceDocumentType);
 }
 
 export async function GET() {
@@ -58,6 +63,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required document data" }, { status: 400 });
   }
 
+  if (!isComplianceDocumentType(type)) {
+    return NextResponse.json({ error: "Invalid compliance document type" }, { status: 400 });
+  }
+
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
@@ -72,7 +81,7 @@ export async function POST(request: Request) {
   const document = await prisma.complianceDocument.create({
     data: {
       organizationId: organization.id,
-      type: type as "REGISTRATION" | "TAX" | "COMPLIANCE" | "INSURANCE" | "LICENSE" | "OTHER",
+      type,
       title,
       fileName: file.name,
       filePath,
