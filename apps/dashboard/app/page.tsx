@@ -25,6 +25,7 @@ export default async function DashboardPage() {
   return (
     <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}>
       <h1>TrustLayer Dashboard</h1>
+      <p><a href="/vendors">Browse public vendor directory</a></p>
       <p>Vendor verification, compliance status, and trust workflows.</p>
 
       <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd", maxWidth: 640 }}>
