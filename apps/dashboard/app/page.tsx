@@ -39,6 +39,8 @@ export default async function DashboardPage() {
         <h2>Compliance Documents</h2>
         <p>Upload incorporation, tax, VAT, permits, insurance, and sector-specific verification documents.</p>
         <a href="/compliance/documents">Manage compliance documents</a>
+        <br />
+        <a href="/compliance/status">View compliance status</a>
       </section>
 
       <section style={{ marginTop: 24 }}>
