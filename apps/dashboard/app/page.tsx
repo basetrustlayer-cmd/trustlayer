@@ -35,6 +35,12 @@ export default async function DashboardPage() {
         </a>
       </section>
 
+      <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd", maxWidth: 640 }}>
+        <h2>Compliance Documents</h2>
+        <p>Upload incorporation, tax, VAT, permits, insurance, and sector-specific verification documents.</p>
+        <a href="/compliance/documents">Manage compliance documents</a>
+      </section>
+
       <section style={{ marginTop: 24 }}>
         <h2>Signed in</h2>
         <p>Email: {user.email}</p>
