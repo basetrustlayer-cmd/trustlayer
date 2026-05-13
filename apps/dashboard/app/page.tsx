@@ -43,6 +43,10 @@ export default async function DashboardPage() {
         <a href="/compliance/status">View compliance status</a>
         <br />
         <a href="/trust-score">View trust score</a>
+        <br />
+        <a href="/verification/requests">Manage verification requests</a>
+        <br />
+        <a href="/certification/badge">View certification badge</a>
       </section>
 
       <section style={{ marginTop: 24 }}>
