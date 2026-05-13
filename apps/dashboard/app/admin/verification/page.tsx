@@ -1,0 +1,170 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type VerificationRequest = {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  organization: {
+    name: string;
+    companyProfile?: {
+      legalName: string;
+      country: string;
+      industry: string;
+    } | null;
+    complianceDocuments: {
+      id: string;
+      title: string;
+      type: string;
+      status: string;
+    }[];
+  };
+};
+
+function formatStatus(status: string) {
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+export default function AdminVerificationPage() {
+  const [requests, setRequests] = useState<VerificationRequest[]>([]);
+  const [message, setMessage] = useState("");
+
+  async function loadRequests() {
+    const response = await fetch("/api/admin/verification");
+    const data = await response.json();
+    setRequests(data.requests || []);
+  }
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  async function updateStatus(id: string, status: string) {
+    setMessage("");
+
+    const response = await fetch("/api/admin/verification", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ id, status })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Failed to update request.");
+      return;
+    }
+
+    setMessage(`Request marked as ${formatStatus(status)}.`);
+    await loadRequests();
+  }
+
+  return (
+    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 1100 }}>
+      <h1>Admin Verification Console</h1>
+      <p>Review vendor verification requests and approve or reject them.</p>
+
+      {message ? <p style={{ marginTop: 16 }}>{message}</p> : null}
+
+      <section style={{ marginTop: 32 }}>
+        {requests.length === 0 ? (
+          <p>No verification requests found.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 24 }}>
+            {requests.map((request) => (
+              <article
+                key={request.id}
+                style={{
+                  border: "1px solid #ddd",
+                  borderRadius: 8,
+                  padding: 24
+                }}
+              >
+                <h2>{request.title}</h2>
+                <p><strong>Status:</strong> {formatStatus(request.status)}</p>
+                <p><strong>Organization:</strong> {request.organization.name}</p>
+
+                {request.organization.companyProfile ? (
+                  <>
+                    <p>
+                      <strong>Legal Name:</strong>{" "}
+                      {request.organization.companyProfile.legalName}
+                    </p>
+                    <p>
+                      <strong>Country:</strong>{" "}
+                      {request.organization.companyProfile.country}
+                    </p>
+                    <p>
+                      <strong>Industry:</strong>{" "}
+                      {request.organization.companyProfile.industry}
+                    </p>
+                  </>
+                ) : (
+                  <p>No company profile submitted.</p>
+                )}
+
+                <h3>Compliance Documents</h3>
+
+                {request.organization.complianceDocuments.length === 0 ? (
+                  <p>No documents uploaded.</p>
+                ) : (
+                  <ul>
+                    {request.organization.complianceDocuments.map((doc) => (
+                      <li key={doc.id}>
+                        {doc.title} ({formatStatus(doc.type)})
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    marginTop: 20
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => updateStatus(request.id, "IN_REVIEW")}
+                    style={{ padding: 10 }}
+                  >
+                    Mark In Review
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateStatus(request.id, "APPROVED")}
+                    style={{ padding: 10 }}
+                  >
+                    Approve
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateStatus(request.id, "REJECTED")}
+                    style={{ padding: 10 }}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <p style={{ marginTop: 24 }}>
+        <a href="/">Back to dashboard</a>
+      </p>
+    </main>
+  );
+}
