@@ -1,0 +1,5 @@
+
+
+> @trustlayer/web@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/apps/web
+> tsc --noEmit
+

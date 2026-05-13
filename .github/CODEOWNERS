@@ -1,0 +1,6 @@
+# Require owner review for sensitive paths
+/packages/database/ @basetrustlayer-cmd
+/apps/dashboard/app/api/ @basetrustlayer-cmd
+/apps/dashboard/lib/session.ts @basetrustlayer-cmd
+/apps/dashboard/lib/db.ts @basetrustlayer-cmd
+/.github/ @basetrustlayer-cmd

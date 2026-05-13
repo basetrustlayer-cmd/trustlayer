@@ -1,0 +1,5 @@
+
+
+> @trustlayer/shared-types@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/packages/shared-types
+> tsc --noEmit
+
