@@ -1,0 +1,5 @@
+
+
+> @trustlayer/api-gateway@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/services/api-gateway
+> tsc --noEmit
+

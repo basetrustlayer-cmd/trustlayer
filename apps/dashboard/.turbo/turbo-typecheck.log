@@ -1,0 +1,5 @@
+
+
+> @trustlayer/dashboard@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/apps/dashboard
+> tsc --noEmit
+

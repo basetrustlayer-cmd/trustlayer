@@ -4,16 +4,16 @@
   "private": true,
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck",
-    "docker:up": "docker compose -f infra/docker/docker-compose.yml up --build",
-    "docker:down": "docker compose -f infra/docker/docker-compose.yml down -v"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@types/node": "^25.7.0",
+    "@types/node": "^22.0.0",
     "eslint": "^10.3.0",
     "prettier": "^3.8.3",
     "turbo": "^2.9.12",

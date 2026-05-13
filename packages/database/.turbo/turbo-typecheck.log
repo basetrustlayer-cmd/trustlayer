@@ -1,0 +1,5 @@
+
+
+> @trustlayer/database@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/packages/database
+> tsc --noEmit
+
