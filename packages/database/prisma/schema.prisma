@@ -23,6 +23,12 @@ enum VerificationStatus {
   EXPIRED
 }
 
+enum UserRole {
+  ADMIN
+  VENDOR
+  BUYER
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -35,11 +41,13 @@ model Organization {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  role         UserRole @default(VENDOR)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   memberships Membership[]
 }
