@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   const document = await prisma.complianceDocument.create({
     data: {
       organizationId: organization.id,
-      type: type as any,
+      type: type as "REGISTRATION" | "TAX" | "COMPLIANCE" | "INSURANCE" | "LICENSE" | "OTHER",
       title,
       fileName: file.name,
       filePath,
