@@ -1,0 +1,12 @@
+{
+  "name": "@trustlayer/api-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo api gateway running",
+    "build": "echo building api gateway",
+    "lint": "echo lint api gateway",
+    "typecheck": "echo typecheck api gateway",
+    "test": "echo test api gateway"
+  }
+}

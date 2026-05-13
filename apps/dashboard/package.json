@@ -1,0 +1,12 @@
+{
+  "name": "@trustlayer/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo dashboard running",
+    "build": "echo building dashboard",
+    "lint": "echo lint dashboard",
+    "typecheck": "echo typecheck dashboard",
+    "test": "echo test dashboard"
+  }
+}

@@ -1,23 +1,20 @@
-# TrustLayer
+# TrustLayer Platform Foundation
 
-Africa's sovereign identity, reputation, and risk infrastructure.
+Epic 1 establishes the TrustLayer monorepo foundation.
 
-## MVP Modules
+## Apps and Services
 
-- Public Website
-- Developer Portal
-- API Gateway
-- Identity Verification
-- TrustScore Engine
-- Fraud Detection
-- Webhooks
-- Admin Console
+- apps/web: public website
+- apps/dashboard: integrator dashboard
+- services/api-gateway: REST API gateway
+- packages/shared-types: shared TypeScript contracts
+- infra/docker: local PostgreSQL and Redis
 
-## Tech Stack
+## Local Start
 
-- Next.js
-- NestJS
-- PostgreSQL
-- Redis
-- Docker
-- GitHub Actions
+```bash
+corepack enable
+pnpm install
+cp .env.example .env
+pnpm docker:up
+

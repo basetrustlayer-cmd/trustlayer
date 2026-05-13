@@ -1,0 +1,12 @@
+{
+  "name": "@trustlayer/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo web running",
+    "build": "echo building web",
+    "lint": "echo lint web",
+    "typecheck": "echo typecheck web",
+    "test": "echo test web"
+  }
+}

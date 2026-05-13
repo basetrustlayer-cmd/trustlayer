@@ -1,0 +1,11 @@
+{
+  "name": "@trustlayer/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "echo lint shared types",
+    "typecheck": "echo typecheck shared types",
+    "test": "echo test shared types",
+    "build": "echo building shared types"
+  }
+}
