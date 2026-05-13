@@ -36,8 +36,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships         Membership[]
-  verificationRequests VerificationRequest[]
+  memberships          Membership[]
+  verificationRequests  VerificationRequest[]
+  companyProfile        CompanyProfile?
 }
 
 model User {
@@ -72,6 +73,29 @@ model VerificationRequest {
   status         VerificationStatus @default(DRAFT)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+
+model CompanyProfile {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  legalName      String
+  tradeName      String?
+  entityType     String
+  taxId          String?
+  website        String?
+  phone          String?
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  postalCode     String
+  country        String   @default("US")
+  industry       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
