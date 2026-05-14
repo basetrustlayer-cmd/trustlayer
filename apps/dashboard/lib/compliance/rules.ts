@@ -1,64 +1,33 @@
+/**
+ * PARKED MODULE
+ *
+ * TrustLayer is being realigned as a B2B identity verification and TrustScore API.
+ * Procurement/compliance document rules are outside the current MVP scope.
+ *
+ * This compatibility stub preserves the original function signature so all
+ * existing imports continue to compile while returning no requirements.
+ */
+
 export type ComplianceRule = {
   country: string;
   industry: string;
   requiredDocuments: string[];
 };
 
-export const complianceRules: ComplianceRule[] = [
-  {
-    country: "GH",
-    industry: "Retail",
-    requiredDocuments: [
-      "CERTIFICATE_OF_INCORPORATION",
-      "TAX_IDENTIFICATION",
-      "BUSINESS_OPERATING_PERMIT",
-      "VAT_REGISTRATION"
-    ]
-  },
-  {
-    country: "GH",
-    industry: "Food",
-    requiredDocuments: [
-      "CERTIFICATE_OF_INCORPORATION",
-      "TAX_IDENTIFICATION",
-      "FOOD_DRUG_AUTHORITY_APPROVAL",
-      "BUSINESS_OPERATING_PERMIT"
-    ]
-  },
-  {
-    country: "NG",
-    industry: "Food",
-    requiredDocuments: [
-      "CERTIFICATE_OF_INCORPORATION",
-      "TAX_IDENTIFICATION",
-      "FOOD_DRUG_AUTHORITY_APPROVAL",
-      "IMPORT_EXPORT_LICENSE"
-    ]
-  },
-  {
-    country: "KE",
-    industry: "Manufacturing",
-    requiredDocuments: [
-      "CERTIFICATE_OF_INCORPORATION",
-      "TAX_IDENTIFICATION",
-      "SOCIAL_SECURITY_REGISTRATION",
-      "ENVIRONMENTAL_PERMIT"
-    ]
-  }
-];
+/**
+ * No active compliance rules in the current MVP.
+ */
+export const complianceRules: ComplianceRule[] = [];
 
-export function getRequiredDocuments(country: string, industry: string) {
-  const exact = complianceRules.find(
-    (rule) =>
-      rule.country.toLowerCase() === country.toLowerCase() &&
-      rule.industry.toLowerCase() === industry.toLowerCase()
-  );
-
-  if (exact) return exact.requiredDocuments;
-
-  return [
-    "CERTIFICATE_OF_INCORPORATION",
-    "TAX_IDENTIFICATION",
-    "BUSINESS_OPERATING_PERMIT"
-  ];
+/**
+ * Returns no required documents.
+ * Parameters are intentionally ignored to maintain backward compatibility.
+ */
+export function getRequiredDocuments(
+  _country: string,
+  _industry: string
+): string[] {
+  void _country;
+  void _industry;
+  return [];
 }
