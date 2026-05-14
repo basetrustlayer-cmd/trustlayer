@@ -1,9 +1,8 @@
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { ComplianceDocumentType } from "@prisma/client";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
+import { uploadFile } from "../../../../lib/storage/upload";
 
 async function getUserOrganization(userId: string) {
   const membership = await prisma.membership.findFirst({
@@ -15,7 +14,9 @@ async function getUserOrganization(userId: string) {
 }
 
 function isComplianceDocumentType(value: string): value is ComplianceDocumentType {
-  return Object.values(ComplianceDocumentType).includes(value as ComplianceDocumentType);
+  return Object.values(ComplianceDocumentType).includes(
+    value as ComplianceDocumentType
+  );
 }
 
 export async function GET() {
@@ -49,7 +50,10 @@ export async function POST(request: Request) {
   const organization = await getUserOrganization(user.id);
 
   if (!organization) {
-    return NextResponse.json({ error: "Complete company onboarding first" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Complete company onboarding first" },
+      { status: 400 }
+    );
   }
 
   const formData = await request.formData();
@@ -60,23 +64,31 @@ export async function POST(request: Request) {
   const notes = String(formData.get("notes") || "");
 
   if (!file || !type || !title) {
-    return NextResponse.json({ error: "Missing required document data" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing required document data" },
+      { status: 400 }
+    );
   }
 
   if (!isComplianceDocumentType(type)) {
-    return NextResponse.json({ error: "Invalid compliance document type" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid compliance document type" },
+      { status: 400 }
+    );
   }
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadDir = path.join(process.cwd(), "uploads", "compliance", organization.id);
-  await mkdir(uploadDir, { recursive: true });
+  const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const objectKey =
+    `compliance/${organization.id}/${Date.now()}-${safeFileName}`;
 
-  const safeFileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const filePath = path.join(uploadDir, safeFileName);
-
-  await writeFile(filePath, buffer);
+  await uploadFile({
+    key: objectKey,
+    body: buffer,
+    contentType: file.type || "application/octet-stream"
+  });
 
   const document = await prisma.complianceDocument.create({
     data: {
@@ -84,7 +96,7 @@ export async function POST(request: Request) {
       type,
       title,
       fileName: file.name,
-      filePath,
+      filePath: objectKey,
       mimeType: file.type || "application/octet-stream",
       sizeBytes: file.size,
       notes: notes || null
