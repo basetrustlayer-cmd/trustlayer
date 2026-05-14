@@ -36,14 +36,14 @@ model Organization {
   updatedAt DateTime @updatedAt
 
   memberships          Membership[]
-  verificationRequests  VerificationRequest[]
-  companyProfile        CompanyProfile?
-  complianceDocuments   ComplianceDocument[]
-  auditLogs             AuditLog[]
-  platforms   Platform[]
-  subscription          Subscription?
-  invoices              Invoice[]
-  payments              Payment[]
+  verificationRequests VerificationRequest[]
+  companyProfile       CompanyProfile?
+  complianceDocuments  ComplianceDocument[]
+  auditLogs            AuditLog[]
+  platforms            Platform[]
+  subscription         Subscription?
+  invoices             Invoice[]
+  payments             Payment[]
 }
 
 model User {
@@ -58,6 +58,7 @@ model User {
   memberships Membership[]
   sessions    Session[]
   auditLogs   AuditLog[]
+  platforms   Platform[]
 }
 
 model Membership {
@@ -84,7 +85,6 @@ model VerificationRequest {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
-
 model CompanyProfile {
   id             String   @id @default(cuid())
   organizationId String   @unique
@@ -106,7 +106,6 @@ model CompanyProfile {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
-
 
 enum ComplianceDocumentType {
   CERTIFICATE_OF_INCORPORATION
@@ -237,7 +236,7 @@ model SubscriptionPlan {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
-  subscriptions      Subscription[]
+  subscriptions Subscription[]
 }
 
 model Subscription {
@@ -255,9 +254,9 @@ model Subscription {
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
-  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  plan                   SubscriptionPlan   @relation(fields: [planId], references: [id])
-  invoices               Invoice[]
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+  invoices     Invoice[]
 
   @@index([status])
 }
@@ -279,9 +278,9 @@ model Invoice {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  payments          Payment[]
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments     Payment[]
 
   @@index([organizationId])
 }
@@ -301,52 +300,155 @@ model Payment {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  invoice           Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])
 }
-
 
 enum ApiKeyEnvironment {
   TEST
   LIVE
 }
 
+enum PlanTier {
+  SANDBOX
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
 model Platform {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  slug        String   @unique
-  description String?
-  website     String?
-  country     String   @default("GH")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String            @id @default(cuid())
+  organizationId String?
+  userId         String
+  name           String
+  slug           String            @unique
+  description    String?
+  website        String?
+  contactEmail   String?
+  country        String            @default("GH")
+  planTier       PlanTier          @default(SANDBOX)
+  apiScopes      Json?
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  apiKeys     ApiKey[]
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeys      ApiKey[]
+  webhooks     Webhook[]
 
+  @@index([organizationId])
   @@index([userId])
 }
 
 model ApiKey {
-  id              String            @id @default(cuid())
-  platformId      String
-  name            String
-  environment     ApiKeyEnvironment @default(TEST)
-  keyPrefix       String
-  keyHash         String            @unique
-  scopes          Json?
-  lastUsedAt      DateTime?
-  expiresAt       DateTime?
-  revokedAt       DateTime?
-  createdAt       DateTime          @default(now())
+  id          String            @id @default(cuid())
+  platformId  String
+  name        String
+  environment ApiKeyEnvironment @default(TEST)
+  keyPrefix   String
+  keyHash     String            @unique
+  scopes      Json?
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime          @default(now())
 
-  platform        Platform          @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
 
   @@index([platformId])
   @@index([environment])
+}
+
+enum SubjectType {
+  INDIVIDUAL
+  BUYER
+  SELLER
+  BUSINESS
+  PLATFORM
+  INSTITUTION
+}
+
+enum VerificationMethod {
+  PHONE_OTP
+  GHANA_CARD
+  BUSINESS_ORC
+  BVN
+  NIN
+}
+
+enum IdentityVerificationStatus {
+  PENDING
+  OTP_SENT
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+model Subject {
+  id            String   @id @default(cuid())
+  type          SubjectType
+  externalId    String?
+  displayName   String?
+  country       String   @default("GH")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trustScores   TrustScore[]
+  verifications VerificationSession[]
+
+  @@index([type])
+  @@index([externalId])
+}
+
+model VerificationSession {
+  id               String                     @id @default(cuid())
+  subjectId        String
+  method           VerificationMethod
+  status           IdentityVerificationStatus @default(PENDING)
+  registryResponse Json?
+  completedAt      DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId])
+  @@index([method])
+  @@index([status])
+}
+
+model TrustScore {
+  id         String   @id @default(cuid())
+  subjectId  String
+  score      Int
+  tier       String
+  confidence Float
+  factors    Json
+  createdAt  DateTime @default(now())
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId])
+  @@index([score])
+  @@index([tier])
+}
+
+model Webhook {
+  id         String   @id @default(cuid())
+  platformId String
+  url        String
+  events     Json
+  secret     String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([isActive])
 }
