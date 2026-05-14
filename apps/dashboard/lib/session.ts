@@ -6,7 +6,7 @@ const SESSION_COOKIE = "trustlayer_session";
 export type SessionUser = {
   id: string;
   email: string;
-  role: "ADMIN" | "VENDOR" | "BUYER";
+  role: "ADMIN" | "INTEGRATOR";
 };
 
 function getAuthSecret() {

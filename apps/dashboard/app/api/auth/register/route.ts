@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "../../../../lib/db";
 import { setSessionCookie, signSession } from "../../../../lib/session";
+import { getRequestIp, rateLimit } from "../../../../lib/security/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -11,6 +12,16 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const ip = getRequestIp(request);
+  const limited = rateLimit(`register:${ip}`, 5, 60_000);
+
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Too many registration attempts. Try again shortly." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const parsed = registerSchema.safeParse(body);
 
@@ -35,7 +46,7 @@ export async function POST(request: Request) {
       name,
       email,
       passwordHash,
-      role: "VENDOR"
+      role: "INTEGRATOR"
     }
   });
 
