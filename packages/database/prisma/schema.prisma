@@ -25,8 +25,7 @@ enum VerificationStatus {
 
 enum UserRole {
   ADMIN
-  VENDOR
-  BUYER
+  INTEGRATOR
 }
 
 model Organization {
@@ -51,7 +50,7 @@ model User {
   email        String   @unique
   name         String?
   passwordHash String?
-  role         UserRole @default(VENDOR)
+  role         UserRole @default(INTEGRATOR)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
