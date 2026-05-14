@@ -9,20 +9,34 @@ export type SessionUser = {
   role: "ADMIN" | "VENDOR" | "BUYER";
 };
 
+function getAuthSecret() {
+  const secret = process.env.AUTH_SECRET;
+
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "AUTH_SECRET must be set and at least 32 characters long."
+    );
+  }
+
+  return secret;
+}
+
 export function signSession(user: SessionUser) {
-  const secret = process.env.AUTH_SECRET || "dev-secret-change-before-production";
-  return jwt.sign(user, secret, { expiresIn: "7d" });
+  return jwt.sign(user, getAuthSecret(), {
+    expiresIn: "7d"
+  });
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   try {
-    const secret = process.env.AUTH_SECRET || "dev-secret-change-before-production";
-    return jwt.verify(token, secret) as SessionUser;
+    return jwt.verify(token, getAuthSecret()) as SessionUser;
   } catch {
     return null;
   }
