@@ -40,6 +40,7 @@ model Organization {
   companyProfile        CompanyProfile?
   complianceDocuments   ComplianceDocument[]
   auditLogs             AuditLog[]
+  platforms   Platform[]
   subscription          Subscription?
   invoices              Invoice[]
   payments              Payment[]
@@ -98,7 +99,7 @@ model CompanyProfile {
   city           String
   state          String
   postalCode     String
-  country        String   @default("US")
+  country        String   @default("GH")
   industry       String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -307,3 +308,45 @@ model Payment {
   @@index([status])
 }
 
+
+enum ApiKeyEnvironment {
+  TEST
+  LIVE
+}
+
+model Platform {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  slug        String   @unique
+  description String?
+  website     String?
+  country     String   @default("GH")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeys     ApiKey[]
+
+  @@index([userId])
+}
+
+model ApiKey {
+  id              String            @id @default(cuid())
+  platformId      String
+  name            String
+  environment     ApiKeyEnvironment @default(TEST)
+  keyPrefix       String
+  keyHash         String            @unique
+  scopes          Json?
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime          @default(now())
+
+  platform        Platform          @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([environment])
+}
