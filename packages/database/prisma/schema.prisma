@@ -41,6 +41,9 @@ model Organization {
   companyProfile        CompanyProfile?
   complianceDocuments   ComplianceDocument[]
   auditLogs             AuditLog[]
+  subscription          Subscription?
+  invoices              Invoice[]
+  payments              Payment[]
 }
 
 model User {
@@ -176,3 +179,132 @@ model AuditLog {
 
   @@index([organizationId, createdAt])
 }
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+  ONE_TIME
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  PAYSTACK
+  FLUTTERWAVE
+  STRIPE
+  MANUAL
+}
+
+model SubscriptionPlan {
+  id                 String          @id @default(cuid())
+  name               String
+  slug               String          @unique
+  description        String?
+  priceCents         Int
+  currency           String          @default("USD")
+  interval           BillingInterval
+  trialDays          Int?
+  isActive           Boolean         @default(true)
+  maxOrganizations   Int?
+  maxDocuments       Int?
+  includesTrustScore Boolean         @default(false)
+  includesBadge      Boolean         @default(false)
+  includesApiAccess  Boolean         @default(false)
+  externalProductId  String?
+  externalPriceId    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  subscriptions      Subscription[]
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  organizationId         String             @unique
+  planId                 String
+  status                 SubscriptionStatus @default(TRIALING)
+  provider               PaymentProvider    @default(PAYSTACK)
+  externalCustomerId     String?
+  externalSubscriptionId String?
+  trialEndsAt            DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  canceledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                   SubscriptionPlan   @relation(fields: [planId], references: [id])
+  invoices               Invoice[]
+
+  @@index([status])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  subscriptionId    String
+  organizationId    String
+  invoiceNumber     String        @unique
+  status            InvoiceStatus @default(DRAFT)
+  subtotalCents     Int
+  taxCents          Int           @default(0)
+  totalCents        Int
+  currency          String        @default("USD")
+  externalInvoiceId String?
+  hostedInvoiceUrl  String?
+  dueDate           DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+
+  @@index([organizationId])
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  invoiceId         String
+  organizationId    String
+  provider          PaymentProvider
+  externalPaymentId String?
+  reference         String?         @unique
+  amountCents       Int
+  currency          String          @default("USD")
+  status            PaymentStatus   @default(PENDING)
+  paidAt            DateTime?
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  invoice           Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
