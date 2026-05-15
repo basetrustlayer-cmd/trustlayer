@@ -421,3 +421,62 @@ model ScoreHistory {
 
   @@index([subjectId, role, createdAt])
 }
+
+
+model Transaction {
+  id              String   @id @default(cuid())
+  sellerSubjectId String
+  buyerSubjectId  String
+  sellerRole      String   @default("seller")
+  buyerRole       String   @default("buyer")
+  amountCents     Int
+  currency        String   @default("GHS")
+  status          String   @default("COMPLETED")
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sellerSubjectId])
+  @@index([buyerSubjectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Review {
+  id                String   @id @default(cuid())
+  reviewerSubjectId String
+  revieweeSubjectId String
+  reviewerRole      String
+  revieweeRole      String
+  rating            Int
+  comment           String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([reviewerSubjectId])
+  @@index([revieweeSubjectId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+model Dispute {
+  id                  String   @id @default(cuid())
+  filerSubjectId      String
+  respondentSubjectId String
+  filerRole           String
+  respondentRole      String
+  status              String   @default("OPEN")
+  faultParty          String?
+  reason              String?
+  resolution          String?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([filerSubjectId])
+  @@index([respondentSubjectId])
+  @@index([status])
+  @@index([faultParty])
+  @@index([createdAt])
+}
