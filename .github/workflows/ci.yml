@@ -33,7 +33,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres@localhost:5432/trustlayer_dev?schema=public
       REDIS_URL: redis://localhost:6379
-      AUTH_SECRET: ci-secret
+      AUTH_SECRET: trustlayer-ci-secret-32-characters-minimum
 
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +48,9 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Verify OpenAPI lock
+        run: node scripts/check-openapi-lock.js
 
       - run: pnpm --filter @trustlayer/database prisma:generate
 
