@@ -15,6 +15,18 @@ type VerificationRequestDetail = {
   };
 };
 
+type VerificationDocument = {
+  id: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  reviewStatus: string;
+  reviewNotes: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  downloadUrl: string;
+};
+
 type AuditLog = {
   id: string;
   action: string;
@@ -31,14 +43,28 @@ function formatStatus(status: string) {
     .join(" ");
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB`;
+  }
+
+  return `${bytes} bytes`;
+}
+
 export default function VerificationDetailPage({
   params
 }: {
   params: { id: string };
 }) {
   const [request, setRequest] = useState<VerificationRequestDetail | null>(null);
+  const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [notes, setNotes] = useState("");
+  const [documentNotes, setDocumentNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
 
   async function loadDetail() {
@@ -51,6 +77,7 @@ export default function VerificationDetailPage({
     }
 
     setRequest(data.request);
+    setDocuments(data.documents || []);
     setAuditLogs(data.auditLogs || []);
   }
 
@@ -79,6 +106,35 @@ export default function VerificationDetailPage({
     setNotes("");
     setMessage(`Request marked as ${formatStatus(status)}.`);
     setRequest(data.request);
+    await loadDetail();
+  }
+
+  async function reviewDocument(documentId: string, reviewStatus: string) {
+    setMessage("");
+
+    const response = await fetch(
+      `/api/admin/verification/${params.id}/documents/${documentId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          reviewStatus,
+          reviewNotes: documentNotes[documentId] || ""
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Could not review document.");
+      return;
+    }
+
+    setDocumentNotes((current) => ({ ...current, [documentId]: "" }));
+    setMessage(`Document marked as ${formatStatus(reviewStatus)}.`);
     await loadDetail();
   }
 
@@ -114,7 +170,7 @@ export default function VerificationDetailPage({
           </section>
 
           <section style={{ marginTop: 24, padding: 24, border: "1px solid #ddd" }}>
-            <h2>Review Notes</h2>
+            <h2>Request Review Notes</h2>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
@@ -127,15 +183,94 @@ export default function VerificationDetailPage({
                 Mark In Review
               </button>
               <button type="button" onClick={() => updateStatus("APPROVED")} style={{ padding: 10 }}>
-                Approve
+                Approve Request
               </button>
               <button type="button" onClick={() => updateStatus("REJECTED")} style={{ padding: 10 }}>
-                Reject
+                Reject Request
               </button>
               <button type="button" onClick={() => updateStatus("EXPIRED")} style={{ padding: 10 }}>
-                Expire
+                Expire Request
               </button>
             </div>
+          </section>
+
+          <section style={{ marginTop: 24 }}>
+            <h2>Supporting Documents</h2>
+
+            {documents.length ? (
+              <div style={{ display: "grid", gap: 16 }}>
+                {documents.map((document) => (
+                  <article key={document.id} style={{ padding: 20, border: "1px solid #ddd" }}>
+                    <h3>{document.filename}</h3>
+                    <p>
+                      <strong>Review Status:</strong> {formatStatus(document.reviewStatus)}
+                    </p>
+                    <p>
+                      <strong>Size:</strong> {formatFileSize(document.sizeBytes)}
+                    </p>
+                    <p>
+                      <strong>Uploaded:</strong>{" "}
+                      {new Date(document.createdAt).toLocaleString()}
+                    </p>
+                    {document.reviewedAt ? (
+                      <p>
+                        <strong>Reviewed:</strong>{" "}
+                        {new Date(document.reviewedAt).toLocaleString()}
+                      </p>
+                    ) : null}
+                    {document.reviewNotes ? (
+                      <p>
+                        <strong>Review Notes:</strong> {document.reviewNotes}
+                      </p>
+                    ) : null}
+
+                    <p>
+                      <a href={document.downloadUrl} target="_blank" rel="noreferrer">
+                        Download document
+                      </a>
+                    </p>
+
+                    <textarea
+                      value={documentNotes[document.id] || ""}
+                      onChange={(event) =>
+                        setDocumentNotes((current) => ({
+                          ...current,
+                          [document.id]: event.target.value
+                        }))
+                      }
+                      placeholder="Add document review notes..."
+                      style={{ width: "100%", minHeight: 90, padding: 12 }}
+                    />
+
+                    <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        onClick={() => reviewDocument(document.id, "APPROVED")}
+                        style={{ padding: 10 }}
+                      >
+                        Approve Document
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reviewDocument(document.id, "REJECTED")}
+                        style={{ padding: 10 }}
+                      >
+                        Reject Document
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => reviewDocument(document.id, "NEEDS_RESUBMISSION")}
+                        style={{ padding: 10 }}
+                      >
+                        Request Resubmission
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p>No supporting documents uploaded yet.</p>
+            )}
           </section>
 
           <section style={{ marginTop: 24 }}>
