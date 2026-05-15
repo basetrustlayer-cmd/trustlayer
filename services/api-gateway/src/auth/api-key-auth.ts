@@ -14,7 +14,7 @@ declare module "fastify" {
   }
 }
 
-const PUBLIC_ROUTES = new Set(["/health"]);
+const PUBLIC_ROUTES = new Set(["/health", "/v1/billing/stripe/webhook"]);
 
 function hashApiKey(apiKey: string): string {
   return createHash("sha256").update(apiKey).digest("hex");
