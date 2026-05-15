@@ -278,6 +278,7 @@ model Platform {
   slug           String            @unique
   description    String?
   website        String?
+  contactEmail String?
   apiKeyHash     String?
   environment    ApiKeyEnvironment @default(TEST)
   tier           PlanTier          @default(SANDBOX)
