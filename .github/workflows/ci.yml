@@ -61,3 +61,28 @@ jobs:
       - run: pnpm typecheck
 
       - run: pnpm test
+
+
+  semgrep:
+    name: semgrep scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: semgrep/semgrep-action@v1
+        with:
+          config: p/default
+
+
+  gitleaks:
+    name: gitleaks scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Gitleaks
+        run: |
+          mkdir -p ./bin
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.30.1_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz -C ./bin gitleaks
+          ./bin/gitleaks version
+      - name: Run Gitleaks working-tree scan
+        run: ./bin/gitleaks detect --source . --no-git --verbose
