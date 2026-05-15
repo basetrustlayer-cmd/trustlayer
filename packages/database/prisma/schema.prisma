@@ -282,6 +282,7 @@ model Platform {
   apiKeyHash     String?
   environment    ApiKeyEnvironment @default(TEST)
   tier           PlanTier          @default(SANDBOX)
+  planTier       PlanTier          @default(SANDBOX)
   isActive       Boolean           @default(true)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
