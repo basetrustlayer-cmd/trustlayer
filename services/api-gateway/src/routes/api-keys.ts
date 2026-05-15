@@ -6,7 +6,10 @@ import { prisma, ApiKeyEnvironment } from "@trustlayer/database";
 const createApiKeySchema = z.object({
   platformId: z.string().min(1),
   environment: z.nativeEnum(ApiKeyEnvironment).default(ApiKeyEnvironment.TEST),
-  scopes: z.array(z.string().min(1)).default(["tier:read", "verification:write"]),
+  scopes: z.array(z.string().min(1)).default([
+    "tier:read",
+    "verification:write"
+  ]),
   expiresAt: z.string().datetime().optional()
 });
 
@@ -19,11 +22,15 @@ function hashApiKey(apiKey: string): string {
 }
 
 function generateApiKey(environment: ApiKeyEnvironment): string {
-  const prefix = environment === ApiKeyEnvironment.LIVE ? "tl_live" : "tl_test";
+  const prefix =
+    environment === ApiKeyEnvironment.LIVE ? "tl_live" : "tl_test";
+
   return `${prefix}_${randomBytes(32).toString("hex")}`;
 }
 
-export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> {
+export async function registerApiKeyRoutes(
+  app: FastifyInstance
+): Promise<void> {
   app.post("/v1/api-keys", async (request, reply) => {
     const parsed = createApiKeySchema.safeParse(request.body);
 
@@ -48,6 +55,27 @@ export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> 
       });
     }
 
+    if (!platform.organizationId) {
+      return reply.status(403).send({
+        error: "Platform is not linked to an organization"
+      });
+    }
+
+    const subscription = await prisma.subscription.findUnique({
+      where: {
+        organizationId: platform.organizationId
+      },
+      include: {
+        plan: true
+      }
+    });
+
+    if (!subscription || !subscription.plan.includesApiAccess) {
+      return reply.status(403).send({
+        error: "API access is not included in the current subscription plan"
+      });
+    }
+
     const plaintextKey = generateApiKey(data.environment);
     const keyPrefix = plaintextKey.slice(0, 12);
     const keyHash = hashApiKey(plaintextKey);
@@ -59,7 +87,9 @@ export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> 
         keyHash,
         scopes: data.scopes,
         environment: data.environment,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null
+        expiresAt: data.expiresAt
+          ? new Date(data.expiresAt)
+          : null
       }
     });
 
@@ -69,14 +99,20 @@ export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> 
       keyPrefix: apiKey.keyPrefix,
       environment: apiKey.environment,
       scopes: apiKey.scopes,
-      expiresAt: apiKey.expiresAt?.toISOString() ?? null,
+      expiresAt:
+        apiKey.expiresAt?.toISOString() ?? null,
       plaintextKey,
-      warning: "Store this API key now. It will not be shown again."
+      warning:
+        "Store this API key now. It will not be shown again."
     });
   });
 
   app.get("/v1/platforms/:platformId/api-keys", async (request, reply) => {
-    const params = z.object({ platformId: z.string().min(1) }).parse(request.params);
+    const params = z
+      .object({
+        platformId: z.string().min(1)
+      })
+      .parse(request.params);
 
     const apiKeys = await prisma.apiKey.findMany({
       where: {
@@ -94,16 +130,21 @@ export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> 
         keyPrefix: apiKey.keyPrefix,
         environment: apiKey.environment,
         scopes: apiKey.scopes,
-        lastUsedAt: apiKey.lastUsedAt?.toISOString() ?? null,
-        expiresAt: apiKey.expiresAt?.toISOString() ?? null,
-        revokedAt: apiKey.revokedAt?.toISOString() ?? null,
+        lastUsedAt:
+          apiKey.lastUsedAt?.toISOString() ?? null,
+        expiresAt:
+          apiKey.expiresAt?.toISOString() ?? null,
+        revokedAt:
+          apiKey.revokedAt?.toISOString() ?? null,
         createdAt: apiKey.createdAt.toISOString()
       }))
     });
   });
 
   app.post("/v1/api-keys/revoke", async (request, reply) => {
-    const parsed = revokeApiKeySchema.safeParse(request.body);
+    const parsed = revokeApiKeySchema.safeParse(
+      request.body
+    );
 
     if (!parsed.success) {
       return reply.status(400).send({
@@ -123,7 +164,8 @@ export async function registerApiKeyRoutes(app: FastifyInstance): Promise<void> 
 
     return reply.status(200).send({
       id: apiKey.id,
-      revokedAt: apiKey.revokedAt?.toISOString() ?? null
+      revokedAt:
+        apiKey.revokedAt?.toISOString() ?? null
     });
   });
 }

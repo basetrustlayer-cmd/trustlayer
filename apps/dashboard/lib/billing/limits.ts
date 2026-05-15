@@ -157,3 +157,24 @@ export async function assertBadgeAccessAllowed(
     limit: null
   };
 }
+
+export async function assertApiAccessAllowed(
+  organizationId: string
+): Promise<BillingLimitResult> {
+  const limits = await getOrganizationSubscriptionLimits(organizationId);
+
+  if (!limits.includesApiAccess) {
+    return {
+      allowed: false,
+      reason: "API access is not included in the current plan.",
+      current: 0,
+      limit: null
+    };
+  }
+
+  return {
+    allowed: true,
+    current: 0,
+    limit: null
+  };
+}
