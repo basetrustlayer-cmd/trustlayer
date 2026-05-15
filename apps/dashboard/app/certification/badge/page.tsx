@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 type BadgeData = {
   error?: string;
   eligible: boolean;
+  verified: boolean;
+  status: string;
   organizationName: string;
   platformName: string;
   platformSlug: string;
@@ -19,6 +21,8 @@ type BadgeData = {
   badgeLabel: string;
   issuedAt: string | null;
   expiresAt: string | null;
+  renewalDueAt: string | null;
+  daysUntilExpiration: number | null;
   verificationUrl: string;
   embedCode: string;
 };
@@ -100,12 +104,18 @@ export default function CertificationBadgePage() {
             <p>Band: {formatLabel(data.band)}</p>
             <p>Verification Tier: {formatLabel(data.verificationTier)}</p>
             <p>Confidence: {Math.round(data.confidence * 100)}%</p>
-            <p>Status: {data.eligible ? "Verified" : "Pending verification"}</p>
+            <p>Status: {formatLabel(data.status)}</p>
+            {data.daysUntilExpiration !== null ? (
+              <p>Days Until Expiration: {data.daysUntilExpiration}</p>
+            ) : null}
             {data.issuedAt ? (
               <p>Issued: {new Date(data.issuedAt).toLocaleDateString()}</p>
             ) : null}
             {data.expiresAt ? (
               <p>Expires: {new Date(data.expiresAt).toLocaleDateString()}</p>
+            ) : null}
+            {data.renewalDueAt ? (
+              <p>Renewal Due: {new Date(data.renewalDueAt).toLocaleDateString()}</p>
             ) : null}
           </section>
 

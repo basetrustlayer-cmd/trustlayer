@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
 import { assertBadgeAccessAllowed } from "../../../../lib/billing/limits";
+import { getCredentialLifecycle } from "../../../../lib/certification/lifecycle";
 
 function getScoreBand(score: number) {
   if (score >= 85) return "high_trust";
@@ -72,12 +73,18 @@ export async function GET() {
 
   const totalDocuments = approvedVerification?.documents.length ?? 0;
   const currentScore = score?.score ?? 0;
-  const eligible = Boolean(approvedVerification) && currentScore >= 70;
+  const lifecycle = getCredentialLifecycle({
+    hasApprovedVerification: Boolean(approvedVerification),
+    approvedVerificationUpdatedAt: approvedVerification?.updatedAt ?? null,
+    score: currentScore
+  });
 
   const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
 
   return NextResponse.json({
-    eligible,
+    eligible: lifecycle.eligible,
+    verified: lifecycle.verified,
+    status: lifecycle.status,
     organizationName: platform.organization.name,
     platformName: platform.name,
     platformSlug: platform.slug,
@@ -89,11 +96,11 @@ export async function GET() {
     approvedVerificationId: approvedVerification?.id ?? null,
     approvedDocuments,
     totalDocuments,
-    badgeLabel: eligible ? "TrustLayer Verified" : "TrustLayer Pending",
-    issuedAt: eligible ? new Date().toISOString() : null,
-    expiresAt: eligible
-      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      : null,
+    badgeLabel: lifecycle.verified ? "TrustLayer Verified" : lifecycle.status === "EXPIRED" ? "TrustLayer Expired" : "TrustLayer Pending",
+    issuedAt: lifecycle.issuedAt?.toISOString() ?? null,
+    expiresAt: lifecycle.expiresAt?.toISOString() ?? null,
+    renewalDueAt: lifecycle.renewalDueAt?.toISOString() ?? null,
+    daysUntilExpiration: lifecycle.daysUntilExpiration,
     verificationUrl,
     embedCode: `<a href="${verificationUrl}" target="_blank" rel="noreferrer">TrustLayer Verified</a>`
   });

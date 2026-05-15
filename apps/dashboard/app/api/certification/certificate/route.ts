@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
 import { assertBadgeAccessAllowed } from "../../../../lib/billing/limits";
+import { getCertificateId, getCredentialLifecycle } from "../../../../lib/certification/lifecycle";
 
 function escapePdfText(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -127,17 +128,22 @@ export async function GET() {
   });
 
   const currentScore = score?.score ?? 0;
+  const lifecycle = getCredentialLifecycle({
+    hasApprovedVerification: Boolean(approvedVerification),
+    approvedVerificationUpdatedAt: approvedVerification?.updatedAt ?? null,
+    score: currentScore
+  });
 
-  if (!approvedVerification || currentScore < 70) {
+  if (!approvedVerification || !lifecycle.verified || !lifecycle.issuedAt || !lifecycle.expiresAt) {
     return NextResponse.json(
-      { error: "Certificate is not available until verification is approved and score is at least 70." },
+      { error: "Certificate is not available until verification is approved, active, and score is at least 70." },
       { status: 403 }
     );
   }
 
-  const issuedAt = new Date();
-  const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-  const certificateId = `TL-${issuedAt.getFullYear()}-${approvedVerification.id.slice(-8).toUpperCase()}`;
+  const issuedAt = lifecycle.issuedAt;
+  const expiresAt = lifecycle.expiresAt;
+  const certificateId = getCertificateId(approvedVerification.id, issuedAt);
   const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
 
   const pdf = buildCertificatePdf({

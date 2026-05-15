@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { getCertificateId, getCredentialLifecycle } from "../../../../../lib/certification/lifecycle";
 
 function getScoreBand(score: number) {
   if (score >= 85) return "high_trust";
@@ -61,19 +62,15 @@ export async function GET(
 
   const totalDocuments = approvedVerification?.documents.length ?? 0;
   const currentScore = score?.score ?? 0;
-  const verified = Boolean(approvedVerification) && currentScore >= 70;
-  const issuedAt = approvedVerification?.updatedAt ?? null;
-  const expiresAt = issuedAt
-    ? new Date(issuedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
-    : null;
-
-  const now = new Date();
-  const expired = Boolean(expiresAt && expiresAt < now);
-  const status = !verified ? "PENDING" : expired ? "EXPIRED" : "ACTIVE";
+  const lifecycle = getCredentialLifecycle({
+    hasApprovedVerification: Boolean(approvedVerification),
+    approvedVerificationUpdatedAt: approvedVerification?.updatedAt ?? null,
+    score: currentScore
+  });
 
   return NextResponse.json({
-    verified: verified && !expired,
-    status,
+    verified: lifecycle.verified,
+    status: lifecycle.status,
     organizationName: platform.organization.name,
     platformName: platform.name,
     platformSlug: platform.slug,
@@ -81,13 +78,16 @@ export async function GET(
     band: getScoreBand(currentScore),
     confidence: score?.confidence ?? 0.1,
     verificationTier: subject?.verificationTier ?? "UNVERIFIED",
-    certificateId: approvedVerification
-      ? `TL-${issuedAt?.getFullYear() ?? now.getFullYear()}-${approvedVerification.id.slice(-8).toUpperCase()}`
-      : null,
+    certificateId:
+      approvedVerification && lifecycle.issuedAt
+        ? getCertificateId(approvedVerification.id, lifecycle.issuedAt)
+        : null,
     approvedVerificationId: approvedVerification?.id ?? null,
     approvedDocuments,
     totalDocuments,
-    issuedAt: issuedAt?.toISOString() ?? null,
-    expiresAt: expiresAt?.toISOString() ?? null
+    issuedAt: lifecycle.issuedAt?.toISOString() ?? null,
+    expiresAt: lifecycle.expiresAt?.toISOString() ?? null,
+    renewalDueAt: lifecycle.renewalDueAt?.toISOString() ?? null,
+    daysUntilExpiration: lifecycle.daysUntilExpiration
   });
 }
