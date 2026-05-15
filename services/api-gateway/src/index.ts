@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { z } from "zod";
+import { apiKeyAuthHook } from "./auth/api-key-auth.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -13,6 +14,8 @@ const app = Fastify({ logger: true });
 await app.register(cors, {
   origin: true
 });
+
+app.addHook("preHandler", apiKeyAuthHook);
 
 const TIER_CEILINGS = {
   UNVERIFIED: 30,
