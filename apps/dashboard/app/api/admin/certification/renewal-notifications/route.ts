@@ -35,16 +35,7 @@ function notificationMessage(input: {
   return `${input.organizationName} certification expires in ${input.daysUntilExpiration} days. Renewal is recommended.`;
 }
 
-export async function POST() {
-  const user = await getSessionUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+async function runRenewalNotificationScan(userId: string | null) {
 
   const approvedRequests = await prisma.verificationRequest.findMany({
     where: {
@@ -142,7 +133,7 @@ export async function POST() {
 
     const notification = await createAuditLog({
       organizationId: request.organizationId,
-      userId: user.id,
+      userId,
       action,
       entityType: "VerificationRequest",
       entityId: request.id,
@@ -162,7 +153,7 @@ export async function POST() {
 
     const email = await sendNotificationEmail({
       organizationId: request.organizationId,
-      userId: user.id,
+      userId,
       to: recipient,
       subject: renewalEmail.subject,
       body: renewalEmail.body,
@@ -178,10 +169,29 @@ export async function POST() {
     notifications.push({ notification, email });
   }
 
-  return NextResponse.json({
+  return {
     scanned: approvedRequests.length,
     notificationsCreated: notifications.length,
     emailsQueued: notifications.length,
     notifications
-  });
+  };
 }
+
+export async function POST() {
+  const user = await getSessionUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const result = await runRenewalNotificationScan(user.id);
+
+  return NextResponse.json(result);
+}
+
+export { runRenewalNotificationScan };
+

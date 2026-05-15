@@ -1,0 +1,15 @@
+name: Certification Renewal Cron
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  renewal-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger renewal notification scan
+        run: |
+          curl -fsS -X POST "${{ secrets.TRUSTLAYER_APP_URL }}/api/cron/certification/renewal-notifications" \
+            -H "Authorization: Bearer ${{ secrets.TRUSTLAYER_CRON_SECRET }}"
