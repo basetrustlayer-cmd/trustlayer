@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
-import { calculateTrustScore, getTrustScoreBand } from "../../../../lib/trust-score/calculate";
-import { getRequiredDocuments } from "../../../../lib/compliance/rules";
+import { calculateTrustScoreDetailed } from "../../../../lib/trust-score/calculate";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -11,56 +10,36 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const membership = await prisma.membership.findFirst({
+  const subject = await prisma.subject.findFirst({
+    where: { externalId: user.id },
+    include: { verifications: true }
+  });
+
+  const platform = await prisma.platform.findFirst({
     where: { userId: user.id },
-    include: {
-      organization: {
-        include: {
-          companyProfile: true,
-          complianceDocuments: true,
-          verificationRequests: true
-        }
-      }
-    }
+    orderBy: { createdAt: "asc" }
   });
 
-  if (!membership?.organization) {
-    return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-  }
+  const identityVerified =
+    subject?.verifications.some(
+      (verification) => verification.status === "VERIFIED"
+    ) ?? false;
 
-  const organization = membership.organization;
-  const profile = organization.companyProfile;
-
-  const requiredDocuments = profile
-    ? getRequiredDocuments(profile.country, profile.industry)
-    : [];
-
-  const score = calculateTrustScore({
-    companyProfileComplete: Boolean(profile),
-    requiredDocuments,
-    uploadedDocuments: organization.complianceDocuments.map((doc) => ({
-      type: String(doc.type),
-      status: String(doc.status),
-      expiresAt: doc.expiresAt
-    }))
+  const result = calculateTrustScoreDetailed({
+    identityVerified,
+    verificationCount: subject?.verifications.length ?? 0,
+    platformCreatedAt: platform?.createdAt ?? null
   });
 
-  const approvedVerification = organization.verificationRequests.some(
-    (request) => request.status === "APPROVED"
-  );
-
-  const eligible = approvedVerification && score >= 70;
+  const eligible = identityVerified && result.score >= 70;
 
   return NextResponse.json({
     eligible,
-    organizationName: organization.name,
-    legalName: profile?.legalName || organization.name,
-    country: profile?.country || null,
-    industry: profile?.industry || null,
-    score,
-    band: getTrustScoreBand(score),
-    approvedVerification,
+    score: result.score,
+    tier: result.tier,
+    confidence: result.confidence,
     badgeLabel: eligible ? "TrustLayer Verified" : "TrustLayer Pending",
+    platformName: platform?.name ?? null,
     issuedAt: eligible ? new Date().toISOString() : null
   });
 }
