@@ -147,9 +147,14 @@ export default function CertificationBadgePage() {
                 </p>
                 <p>Certificate ID: {data.approvedVerificationId}</p>
                 <p>Verification URL: {data.verificationUrl}</p>
-                <button type="button" onClick={() => window.print()} style={{ padding: 10 }}>
-                  Print certificate
-                </button>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => window.print()} style={{ padding: 10 }}>
+                    Print certificate
+                  </button>
+                  <a href="/api/certification/certificate" style={{ padding: 10, border: "1px solid #111" }}>
+                    Download PDF certificate
+                  </a>
+                </div>
               </section>
             </>
           )}
