@@ -333,6 +333,9 @@ model VerificationSession {
   method           VerificationMethod
   status           IdentityVerificationStatus
   registryResponse Json?
+  tierBefore       String?
+  tierAfter        String?
+  expiresAt        DateTime?
   completedAt      DateTime?
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt

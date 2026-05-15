@@ -87,6 +87,10 @@ function normalizeStoredTier(value: string): VerificationTier {
   return "UNVERIFIED";
 }
 
+function otpExpiry(): Date {
+  return new Date(Date.now() + 10 * 60 * 1000);
+}
+
 app.get("/health", async () => {
   return {
     status: "ok",
@@ -106,7 +110,7 @@ app.post("/v1/verify", async (request, reply) => {
 
   const data = parsed.data;
   const subjectType = inferSubjectType(data.method);
-  const tier = inferTier(data.method);
+  const requestedTier = inferTier(data.method);
 
   const status =
     data.method === "PHONE_OTP"
@@ -128,6 +132,10 @@ app.post("/v1/verify", async (request, reply) => {
     }
   });
 
+  const tierBefore = normalizeStoredTier(subject.verificationTier);
+  const tierAfter =
+    status === IdentityVerificationStatus.VERIFIED ? requestedTier : tierBefore;
+
   const completedAt =
     status === IdentityVerificationStatus.VERIFIED ? new Date() : null;
 
@@ -143,11 +151,14 @@ app.post("/v1/verify", async (request, reply) => {
         phoneHash: hashPii(data.phone),
         nationalIdHash: hashPii(data.nationalId)
       },
+      tierBefore,
+      tierAfter,
+      expiresAt: status === IdentityVerificationStatus.OTP_SENT ? otpExpiry() : null,
       completedAt
     }
   });
 
-  let verificationTier = normalizeStoredTier(subject.verificationTier);
+  let verificationTier = tierBefore;
 
   if (status === IdentityVerificationStatus.VERIFIED) {
     const updatedSubject = await prisma.subject.update({
@@ -155,7 +166,7 @@ app.post("/v1/verify", async (request, reply) => {
         id: subject.id
       },
       data: {
-        verificationTier: tier,
+        verificationTier: tierAfter,
         tierUpdatedAt: new Date()
       }
     });
@@ -175,7 +186,10 @@ app.post("/v1/verify", async (request, reply) => {
   return reply.status(200).send({
     verificationId: verification.id,
     status: verification.status,
+    tierBefore,
     tier: verificationTier,
+    tierAfter,
+    expiresAt: verification.expiresAt?.toISOString() ?? null,
     score
   });
 });
