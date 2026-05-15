@@ -137,6 +137,69 @@ export function calculateTrustScoreForPersistence(
   };
 }
 
+async function getSubjectVerificationFacts(subjectId: string) {
+  const subject = await prisma.subject.findUnique({
+    where: { id: subjectId },
+    include: { verifications: true }
+  });
+
+  const verificationCount = subject?.verifications.length ?? 0;
+  const identityVerified =
+    subject?.verifications.some((verification) => verification.status === "VERIFIED") ??
+    false;
+
+  return {
+    verificationTier: subject?.verificationTier ?? "UNVERIFIED",
+    verificationCount,
+    identityVerified
+  };
+}
+
+async function getMarketplaceFacts(subjectId: string, role: ScoreRole) {
+  const sellerTransactionCount = await prisma.transaction.count({
+    where: { sellerSubjectId: subjectId }
+  });
+
+  const buyerTransactionCount = await prisma.transaction.count({
+    where: { buyerSubjectId: subjectId }
+  });
+
+  const reviewStats = await prisma.review.groupBy({
+    by: ["revieweeSubjectId"],
+    where: { revieweeSubjectId: subjectId },
+    _count: { id: true },
+    _avg: { rating: true }
+  });
+
+  const avgRating = reviewStats[0]?._avg.rating ?? 0;
+  const reviewCount = reviewStats[0]?._count.id ?? 0;
+
+  const positiveReviewCount = Math.round((avgRating / 5) * reviewCount);
+  const negativeReviewCount = Math.max(0, reviewCount - positiveReviewCount);
+
+  const disputeCount = await prisma.dispute.count({
+    where: {
+      OR: [
+        { filerSubjectId: subjectId },
+        { respondentSubjectId: subjectId },
+        { faultParty: subjectId }
+      ]
+    }
+  });
+
+  const transactionCount =
+    role === "buyer" || role === "hirer"
+      ? buyerTransactionCount
+      : sellerTransactionCount;
+
+  return {
+    transactionCount,
+    positiveReviewCount,
+    negativeReviewCount,
+    disputeCount
+  };
+}
+
 export async function upsertTrustScore(
   input: TrustScoreCalculationInput
 ): Promise<TrustScoreCalculationResult> {
@@ -187,4 +250,21 @@ export async function upsertTrustScore(
   });
 
   return result;
+}
+
+export async function recalculateTrustScoreFromMarketplace(
+  subjectId: string,
+  role: ScoreRole = "platform",
+  reason = "marketplace.recalculated"
+): Promise<TrustScoreCalculationResult> {
+  const verificationFacts = await getSubjectVerificationFacts(subjectId);
+  const marketplaceFacts = await getMarketplaceFacts(subjectId, role);
+
+  return upsertTrustScore({
+    subjectId,
+    role,
+    ...verificationFacts,
+    ...marketplaceFacts,
+    reason
+  });
 }
