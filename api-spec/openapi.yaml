@@ -4,10 +4,9 @@ info:
   version: 1.0.0
   summary: Identity verification and trust infrastructure API
   description: >
-    TrustLayer provides identity verification, tier assignment,
-    trust scoring, and webhook-based trust event delivery for
-    platform integrators.
-
+    TrustLayer provides identity verification, tier assignment, trust scoring,
+    marketplace trust events, score history, leaderboard analytics, billing,
+    API keys, and webhook delivery for platform integrators.
 servers:
   - url: https://api.trustlayer.io
     description: Production
@@ -17,10 +16,11 @@ servers:
 tags:
   - name: Verification
   - name: Trust Scores
-  - name: Subjects
-  - name: Transactions
-  - name: Reviews
-  - name: Disputes
+  - name: Marketplace Events
+  - name: Leaderboard
+  - name: API Keys
+  - name: Billing
+  - name: Stripe
   - name: Webhooks
 
 security:
@@ -64,10 +64,16 @@ paths:
   /v1/score/{subjectId}:
     get:
       tags: [Trust Scores]
-      summary: Get current trust score
+      summary: Get current trust score by role
       operationId: getTrustScore
       parameters:
         - $ref: '#/components/parameters/SubjectId'
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ScoreRole'
+          description: Defaults to platform.
       responses:
         '200':
           description: Trust score response
@@ -75,30 +81,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TrustScoreResponse'
+        '404':
+          description: Trust score not found
 
-  /v1/subjects:
-    post:
-      tags: [Subjects]
-      summary: Create or upsert a subject
-      operationId: upsertSubject
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubjectRequest'
+  /v1/score/{subjectId}/history:
+    get:
+      tags: [Trust Scores]
+      summary: Get paginated score history
+      operationId: getTrustScoreHistory
+      parameters:
+        - $ref: '#/components/parameters/SubjectId'
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ScoreRole'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
       responses:
         '200':
-          description: Subject response
+          description: Score history response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubjectResponse'
+                $ref: '#/components/schemas/ScoreHistoryResponse'
 
   /v1/transactions:
     post:
-      tags: [Transactions]
-      summary: Submit a transaction event
+      tags: [Marketplace Events]
+      summary: Submit a marketplace transaction event
       operationId: createTransaction
       requestBody:
         required: true
@@ -107,13 +124,17 @@ paths:
             schema:
               $ref: '#/components/schemas/TransactionRequest'
       responses:
-        '202':
-          description: Accepted
+        '200':
+          description: Transaction recorded and scores recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
 
   /v1/reviews:
     post:
-      tags: [Reviews]
-      summary: Submit a review event
+      tags: [Marketplace Events]
+      summary: Submit a directional review event
       operationId: createReview
       requestBody:
         required: true
@@ -122,12 +143,16 @@ paths:
             schema:
               $ref: '#/components/schemas/ReviewRequest'
       responses:
-        '202':
-          description: Accepted
+        '200':
+          description: Review recorded and reviewee score recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
 
   /v1/disputes:
     post:
-      tags: [Disputes]
+      tags: [Marketplace Events]
       summary: Submit a dispute event
       operationId: createDispute
       requestBody:
@@ -137,8 +162,119 @@ paths:
             schema:
               $ref: '#/components/schemas/DisputeRequest'
       responses:
-        '202':
-          description: Accepted
+        '200':
+          description: Dispute recorded and scores recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisputeResponse'
+
+  /v1/leaderboard:
+    get:
+      tags: [Leaderboard]
+      summary: Get trust score leaderboard
+      operationId: getLeaderboard
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ScoreRole'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        '200':
+          description: Leaderboard response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+
+  /v1/api-keys:
+    post:
+      tags: [API Keys]
+      summary: Create API key
+      operationId: createApiKey
+      responses:
+        '200':
+          description: API key created
+
+  /v1/platforms/{platformId}/api-keys:
+    get:
+      tags: [API Keys]
+      summary: List platform API keys
+      operationId: listPlatformApiKeys
+      parameters:
+        - name: platformId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: API keys listed
+
+  /v1/api-keys/revoke:
+    post:
+      tags: [API Keys]
+      summary: Revoke API key
+      operationId: revokeApiKey
+      responses:
+        '200':
+          description: API key revoked
+
+  /v1/billing/plans:
+    post:
+      tags: [Billing]
+      summary: Create billing plan
+      operationId: createBillingPlan
+      responses:
+        '200':
+          description: Plan created
+
+  /v1/billing/subscriptions:
+    post:
+      tags: [Billing]
+      summary: Create subscription
+      operationId: createSubscription
+      responses:
+        '200':
+          description: Subscription created
+
+  /v1/billing/stripe/checkout:
+    post:
+      tags: [Stripe]
+      summary: Create Stripe checkout session
+      operationId: createStripeCheckout
+      responses:
+        '200':
+          description: Checkout session created
+
+  /v1/billing/stripe/portal:
+    post:
+      tags: [Stripe]
+      summary: Create Stripe billing portal session
+      operationId: createStripePortal
+      responses:
+        '200':
+          description: Portal session created
+
+  /v1/billing/stripe/webhook:
+    post:
+      tags: [Stripe]
+      summary: Stripe webhook endpoint
+      operationId: stripeWebhook
+      security: []
+      description: Public endpoint called by Stripe. Does not require API key auth.
+      responses:
+        '200':
+          description: Webhook processed
 
 components:
   securitySchemes:
@@ -157,22 +293,27 @@ components:
       example: sub_test_123
 
   schemas:
+    ScoreRole:
+      type: string
+      enum: [seller, buyer, worker, hirer, platform]
+
+    VerificationTier:
+      type: string
+      enum: [UNVERIFIED, INDIVIDUAL, BUSINESS, ENHANCED]
+
+    ScoreBand:
+      type: string
+      enum: [high_trust, good_standing, fair, low, unscored]
+
     VerifyRequest:
       type: object
-      required:
-        - subjectId
-        - method
+      required: [subjectId, method]
       properties:
         subjectId:
           type: string
         method:
           type: string
-          enum:
-            - PHONE_OTP
-            - GHANA_CARD
-            - BUSINESS_ORC
-            - BVN
-            - NIN
+          enum: [PHONE_OTP, GHANA_CARD, BUSINESS_ORC, BVN, NIN]
         phone:
           type: string
         nationalId:
@@ -180,157 +321,222 @@ components:
 
     VerifyResponse:
       type: object
-      required:
-        - verificationId
-        - status
-        - tier
       properties:
         verificationId:
           type: string
         status:
           type: string
-          enum:
-            - PENDING
-            - OTP_SENT
-            - VERIFIED
-            - FAILED
-            - EXPIRED
+          enum: [PENDING, OTP_SENT, VERIFIED, FAILED, EXPIRED]
         tier:
-          type: string
-          enum:
-            - UNVERIFIED
-            - INDIVIDUAL
-            - BUSINESS
-            - ENHANCED
+          $ref: '#/components/schemas/VerificationTier'
+        score:
+          $ref: '#/components/schemas/TrustScoreResponse'
 
     TierResponse:
       type: object
-      required:
-        - subjectId
-        - tier
-        - confidence
       properties:
         subjectId:
           type: string
         tier:
-          type: string
-          enum:
-            - UNVERIFIED
-            - INDIVIDUAL
-            - BUSINESS
-            - ENHANCED
+          $ref: '#/components/schemas/VerificationTier'
         confidence:
           type: number
-          format: float
+        tierCeiling:
+          type: integer
+        tierUpdatedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+
+    TrustScoreFactors:
+      type: object
+      properties:
+        identity:
+          type: integer
+        transactions:
+          type: integer
+        reviews:
+          type: integer
+        disputes:
+          type: integer
+        roleSpecific:
+          type: integer
 
     TrustScoreResponse:
       type: object
-      required:
-        - subjectId
-        - score
-        - tier
-        - confidence
-        - factors
       properties:
         subjectId:
           type: string
+        role:
+          $ref: '#/components/schemas/ScoreRole'
         score:
           type: integer
           minimum: 0
           maximum: 100
         tier:
-          type: string
+          $ref: '#/components/schemas/ScoreBand'
+        tierCeiling:
+          type: integer
         confidence:
           type: number
-          format: float
         factors:
-          type: object
-          additionalProperties:
-            type: number
+          $ref: '#/components/schemas/TrustScoreFactors'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
-    SubjectRequest:
+    ScoreHistoryResponse:
       type: object
-      required:
-        - externalId
-        - type
       properties:
-        externalId:
+        subjectId:
           type: string
-        type:
-          type: string
-          enum:
-            - INDIVIDUAL
-            - BUYER
-            - SELLER
-            - BUSINESS
-            - PLATFORM
-            - INSTITUTION
-        displayName:
-          type: string
-        country:
-          type: string
-          default: GH
-
-    SubjectResponse:
-      type: object
-      required:
-        - id
-        - externalId
-        - type
-      properties:
-        id:
-          type: string
-        externalId:
-          type: string
-        type:
-          type: string
-        displayName:
-          type: string
-        country:
-          type: string
+        role:
+          $ref: '#/components/schemas/ScoreRole'
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              score:
+                type: integer
+              tierCeiling:
+                type: integer
+              confidence:
+                type: number
+              factors:
+                $ref: '#/components/schemas/TrustScoreFactors'
+              reason:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
 
     TransactionRequest:
       type: object
-      required:
-        - subjectId
-        - amount
-        - currency
+      required: [sellerSubjectId, buyerSubjectId, amountCents]
       properties:
-        subjectId:
+        sellerSubjectId:
           type: string
-        amount:
-          type: number
+        buyerSubjectId:
+          type: string
+        sellerRole:
+          $ref: '#/components/schemas/ScoreRole'
+          default: seller
+        buyerRole:
+          $ref: '#/components/schemas/ScoreRole'
+          default: buyer
+        amountCents:
+          type: integer
+          minimum: 0
         currency:
           type: string
           default: GHS
-        externalId:
+        status:
           type: string
+          default: COMPLETED
+        metadata:
+          type: object
+
+    TransactionResponse:
+      type: object
+      properties:
+        transaction:
+          type: object
+        sellerScore:
+          $ref: '#/components/schemas/TrustScoreResponse'
+        buyerScore:
+          $ref: '#/components/schemas/TrustScoreResponse'
 
     ReviewRequest:
       type: object
-      required:
-        - subjectId
-        - rating
+      required: [reviewerSubjectId, revieweeSubjectId, reviewerRole, revieweeRole, rating]
       properties:
-        subjectId:
+        reviewerSubjectId:
           type: string
+        revieweeSubjectId:
+          type: string
+        reviewerRole:
+          $ref: '#/components/schemas/ScoreRole'
+        revieweeRole:
+          $ref: '#/components/schemas/ScoreRole'
         rating:
           type: integer
           minimum: 1
           maximum: 5
-          example: 5
         comment:
           type: string
+        metadata:
+          type: object
+
+    ReviewResponse:
+      type: object
+      properties:
+        review:
+          type: object
+        revieweeScore:
+          $ref: '#/components/schemas/TrustScoreResponse'
 
     DisputeRequest:
       type: object
-      required:
-        - subjectId
-        - reason
+      required: [filerSubjectId, respondentSubjectId, filerRole, respondentRole]
       properties:
-        subjectId:
+        filerSubjectId:
+          type: string
+        respondentSubjectId:
+          type: string
+        filerRole:
+          $ref: '#/components/schemas/ScoreRole'
+        respondentRole:
+          $ref: '#/components/schemas/ScoreRole'
+        status:
+          type: string
+          default: OPEN
+        faultParty:
           type: string
         reason:
           type: string
-        amount:
-          type: number
+        resolution:
+          type: string
+        metadata:
+          type: object
+
+    DisputeResponse:
+      type: object
+      properties:
+        dispute:
+          type: object
+        filerScore:
+          $ref: '#/components/schemas/TrustScoreResponse'
+        respondentScore:
+          $ref: '#/components/schemas/TrustScoreResponse'
+
+    LeaderboardResponse:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/ScoreRole'
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              rank:
+                type: integer
+              subjectId:
+                type: string
+              externalId:
+                type: string
+              verificationTier:
+                $ref: '#/components/schemas/VerificationTier'
+              role:
+                $ref: '#/components/schemas/ScoreRole'
+              score:
+                type: integer
+              confidence:
+                type: number
+              factors:
+                $ref: '#/components/schemas/TrustScoreFactors'
