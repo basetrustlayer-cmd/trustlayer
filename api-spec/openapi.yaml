@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: TrustLayer API
+  version: 1.0.0
+  summary: Identity verification and trust infrastructure API
+  description: >
+    TrustLayer provides identity verification, tier assignment,
+    trust scoring, and webhook-based trust event delivery for
+    platform integrators.
+
+servers:
+  - url: https://api.trustlayer.io
+    description: Production
+  - url: https://sandbox.trustlayer.io
+    description: Sandbox
+
+tags:
+  - name: Verification
+  - name: Trust Scores
+  - name: Subjects
+  - name: Transactions
+  - name: Reviews
+  - name: Disputes
+  - name: Webhooks
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /v1/verify:
+    post:
+      tags: [Verification]
+      summary: Start identity verification
+      operationId: createVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+
+  /v1/tier/{subjectId}:
+    get:
+      tags: [Verification]
+      summary: Get subject verification tier
+      operationId: getTier
+      parameters:
+        - $ref: '#/components/parameters/SubjectId'
+      responses:
+        '200':
+          description: Tier details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TierResponse'
+
+  /v1/score/{subjectId}:
+    get:
+      tags: [Trust Scores]
+      summary: Get current trust score
+      operationId: getTrustScore
+      parameters:
+        - $ref: '#/components/parameters/SubjectId'
+      responses:
+        '200':
+          description: Trust score response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustScoreResponse'
+
+  /v1/subjects:
+    post:
+      tags: [Subjects]
+      summary: Create or upsert a subject
+      operationId: upsertSubject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequest'
+      responses:
+        '200':
+          description: Subject response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectResponse'
+
+  /v1/transactions:
+    post:
+      tags: [Transactions]
+      summary: Submit a transaction event
+      operationId: createTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '202':
+          description: Accepted
+
+  /v1/reviews:
+    post:
+      tags: [Reviews]
+      summary: Submit a review event
+      operationId: createReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '202':
+          description: Accepted
+
+  /v1/disputes:
+    post:
+      tags: [Disputes]
+      summary: Submit a dispute event
+      operationId: createDispute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisputeRequest'
+      responses:
+        '202':
+          description: Accepted
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    SubjectId:
+      name: subjectId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    VerifyRequest:
+      type: object
+      required:
+        - subjectId
+        - method
+      properties:
+        subjectId:
+          type: string
+        method:
+          type: string
+          enum:
+            - PHONE_OTP
+            - GHANA_CARD
+            - BUSINESS_ORC
+            - BVN
+            - NIN
+        phone:
+          type: string
+        nationalId:
+          type: string
+
+    VerifyResponse:
+      type: object
+      required:
+        - verificationId
+        - status
+        - tier
+      properties:
+        verificationId:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - OTP_SENT
+            - VERIFIED
+            - FAILED
+            - EXPIRED
+        tier:
+          type: string
+          enum:
+            - UNVERIFIED
+            - INDIVIDUAL
+            - BUSINESS
+            - ENHANCED
+
+    TierResponse:
+      type: object
+      required:
+        - subjectId
+        - tier
+        - confidence
+      properties:
+        subjectId:
+          type: string
+        tier:
+          type: string
+          enum:
+            - UNVERIFIED
+            - INDIVIDUAL
+            - BUSINESS
+            - ENHANCED
+        confidence:
+          type: number
+          format: float
+
+    TrustScoreResponse:
+      type: object
+      required:
+        - subjectId
+        - score
+        - tier
+        - confidence
+        - factors
+      properties:
+        subjectId:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        tier:
+          type: string
+        confidence:
+          type: number
+          format: float
+        factors:
+          type: object
+          additionalProperties:
+            type: number
+
+    SubjectRequest:
+      type: object
+      required:
+        - externalId
+        - type
+      properties:
+        externalId:
+          type: string
+        type:
+          type: string
+          enum:
+            - INDIVIDUAL
+            - BUYER
+            - SELLER
+            - BUSINESS
+            - PLATFORM
+            - INSTITUTION
+        displayName:
+          type: string
+        country:
+          type: string
+          default: GH
+
+    SubjectResponse:
+      type: object
+      required:
+        - id
+        - externalId
+        - type
+      properties:
+        id:
+          type: string
+        externalId:
+          type: string
+        type:
+          type: string
+        displayName:
+          type: string
+        country:
+          type: string
+
+    TransactionRequest:
+      type: object
+      required:
+        - subjectId
+        - amount
+        - currency
+      properties:
+        subjectId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          default: GHS
+        externalId:
+          type: string
+
+    ReviewRequest:
+      type: object
+      required:
+        - subjectId
+        - rating
+      properties:
+        subjectId:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+
+    DisputeRequest:
+      type: object
+      required:
+        - subjectId
+        - reason
+      properties:
+        subjectId:
+          type: string
+        reason:
+          type: string
+        amount:
+          type: number
