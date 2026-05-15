@@ -206,7 +206,7 @@ export default function VerificationRequestsPage() {
                     padding: 20
                   }}
                 >
-                  <h3>{request.title}</h3>
+                  <h3><a href={`/verification/requests/${request.id}`}>{request.title}</a></h3>
                   <p>
                     <strong>Status:</strong> {formatStatus(request.status)}
                   </p>
