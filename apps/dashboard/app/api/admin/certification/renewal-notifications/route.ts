@@ -7,6 +7,10 @@ import {
   getCredentialLifecycle
 } from "../../../../../lib/certification/lifecycle";
 import { createAuditLog } from "../../../../../lib/audit/log";
+import {
+  buildRenewalEmail,
+  sendNotificationEmail
+} from "../../../../../lib/notifications/email";
 
 function notificationActionForDays(daysUntilExpiration: number | null, status: string) {
   if (status === "EXPIRED") return "certification.renewal.expired";
@@ -49,7 +53,11 @@ export async function POST() {
     include: {
       organization: {
         include: {
-          platforms: true
+          platforms: {
+            include: {
+              user: true
+            }
+          }
         }
       }
     }
@@ -142,12 +150,38 @@ export async function POST() {
       metadata
     });
 
-    notifications.push(notification);
+    const recipient = platform.contactEmail || platform.user.email;
+    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+    const renewalEmail = buildRenewalEmail({
+      organizationName: request.organization.name,
+      verificationUrl,
+      status: lifecycle.status,
+      daysUntilExpiration: lifecycle.daysUntilExpiration,
+      expiresAt: lifecycle.expiresAt?.toISOString().slice(0, 10) ?? null
+    });
+
+    const email = await sendNotificationEmail({
+      organizationId: request.organizationId,
+      userId: user.id,
+      to: recipient,
+      subject: renewalEmail.subject,
+      body: renewalEmail.body,
+      entityType: "VerificationRequest",
+      entityId: request.id,
+      metadata: {
+        notificationAuditLogId: notification.id,
+        action,
+        platformSlug: platform.slug
+      }
+    });
+
+    notifications.push({ notification, email });
   }
 
   return NextResponse.json({
     scanned: approvedRequests.length,
     notificationsCreated: notifications.length,
+    emailsQueued: notifications.length,
     notifications
   });
 }
