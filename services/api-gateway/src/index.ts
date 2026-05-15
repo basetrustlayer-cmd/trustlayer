@@ -6,6 +6,7 @@ import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerStripeRoutes } from "./routes/stripe.js";
 import { hashPii } from "./security/pii.js";
+import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -34,6 +35,8 @@ const TIER_CEILINGS = {
 
 type VerificationTier = keyof typeof TIER_CEILINGS;
 
+const scoreRoleSchema = z.enum(["seller", "buyer", "worker", "hirer", "platform"]);
+
 const verifySchema = z.object({
   subjectId: z.string().min(1),
   method: z.nativeEnum(VerificationMethod),
@@ -60,6 +63,19 @@ function inferTier(method: VerificationMethod): VerificationTier {
 
   if (method === "BVN" || method === "NIN") {
     return "ENHANCED";
+  }
+
+  return "UNVERIFIED";
+}
+
+function normalizeStoredTier(value: string): VerificationTier {
+  if (
+    value === "UNVERIFIED" ||
+    value === "INDIVIDUAL" ||
+    value === "BUSINESS" ||
+    value === "ENHANCED"
+  ) {
+    return value;
   }
 
   return "UNVERIFIED";
@@ -125,8 +141,10 @@ app.post("/v1/verify", async (request, reply) => {
     }
   });
 
+  let verificationTier = normalizeStoredTier(subject.verificationTier);
+
   if (status === IdentityVerificationStatus.VERIFIED) {
-    await prisma.subject.update({
+    const updatedSubject = await prisma.subject.update({
       where: {
         id: subject.id
       },
@@ -135,12 +153,24 @@ app.post("/v1/verify", async (request, reply) => {
         tierUpdatedAt: new Date()
       }
     });
+
+    verificationTier = normalizeStoredTier(updatedSubject.verificationTier);
   }
+
+  const score = await upsertTrustScore({
+    subjectId: subject.id,
+    role: "platform",
+    identityVerified: status === IdentityVerificationStatus.VERIFIED,
+    verificationCount: 1,
+    verificationTier,
+    reason: "verification.completed"
+  });
 
   return reply.status(200).send({
     verificationId: verification.id,
     status: verification.status,
-    tier
+    tier: verificationTier,
+    score
   });
 });
 
@@ -154,13 +184,6 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
   const subject = await prisma.subject.findUnique({
     where: {
       id: params.subjectId
-    },
-    include: {
-      verifications: {
-        orderBy: {
-          createdAt: "desc"
-        }
-      }
     }
   });
 
@@ -174,7 +197,7 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
     });
   }
 
-  const storedTier = subject.verificationTier as VerificationTier;
+  const storedTier = normalizeStoredTier(subject.verificationTier);
 
   return reply.status(200).send({
     subjectId: subject.id,
@@ -182,6 +205,54 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
     confidence: storedTier === "UNVERIFIED" ? 0.1 : 0.75,
     tierCeiling: TIER_CEILINGS[storedTier],
     tierUpdatedAt: subject.tierUpdatedAt?.toISOString() ?? null
+  });
+});
+
+app.get("/v1/score/:subjectId", async (request, reply) => {
+  const params = z
+    .object({
+      subjectId: z.string().min(1)
+    })
+    .parse(request.params);
+
+  const query = z
+    .object({
+      role: scoreRoleSchema.default("platform")
+    })
+    .parse(request.query);
+
+  const score = await prisma.trustScore.findUnique({
+    where: {
+      subjectId_role: {
+        subjectId: params.subjectId,
+        role: query.role
+      }
+    }
+  });
+
+  if (!score) {
+    return reply.status(404).send({
+      error: "TrustScore not found",
+      subjectId: params.subjectId,
+      role: query.role
+    });
+  }
+
+  return reply.status(200).send({
+    subjectId: score.subjectId,
+    role: score.role as ScoreRole,
+    score: score.score,
+    tierCeiling: score.tierCeiling,
+    confidence: score.confidence,
+    factors: {
+      identity: score.factorIdentity,
+      transactions: score.factorTransactions,
+      reviews: score.factorReviews,
+      disputes: score.factorDisputes,
+      roleSpecific: score.factorRoleSpecific
+    },
+    createdAt: score.createdAt.toISOString(),
+    updatedAt: score.updatedAt.toISOString()
   });
 });
 
