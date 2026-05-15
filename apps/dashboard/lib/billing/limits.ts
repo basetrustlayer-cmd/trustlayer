@@ -36,9 +36,7 @@ export async function getOrganizationSubscriptionLimits(organizationId: string) 
   };
 }
 
-export async function assertDocumentUploadAllowed(
-  organizationId: string
-): Promise<BillingLimitResult> {
+export async function assertDocumentUploadAllowed(organizationId: string): Promise<BillingLimitResult> {
   const limits = await getOrganizationSubscriptionLimits(organizationId);
 
   if (!limits.subscription || !limits.plan) {
@@ -115,5 +113,47 @@ export async function assertOrganizationCreationAllowed(
     allowed: true,
     current,
     limit: limits.maxOrganizations
+  };
+}
+
+export async function assertTrustScoreAccessAllowed(
+  organizationId: string
+): Promise<BillingLimitResult> {
+  const limits = await getOrganizationSubscriptionLimits(organizationId);
+
+  if (!limits.includesTrustScore) {
+    return {
+      allowed: false,
+      reason: "TrustScore access is not included in the current plan.",
+      current: 0,
+      limit: null
+    };
+  }
+
+  return {
+    allowed: true,
+    current: 0,
+    limit: null
+  };
+}
+
+export async function assertBadgeAccessAllowed(
+  organizationId: string
+): Promise<BillingLimitResult> {
+  const limits = await getOrganizationSubscriptionLimits(organizationId);
+
+  if (!limits.includesBadge) {
+    return {
+      allowed: false,
+      reason: "Trust badge access is not included in the current plan.",
+      current: 0,
+      limit: null
+    };
+  }
+
+  return {
+    allowed: true,
+    current: 0,
+    limit: null
   };
 }
