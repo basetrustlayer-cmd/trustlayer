@@ -5,6 +5,7 @@ import { apiKeyAuthHook } from "./auth/api-key-auth.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerStripeRoutes } from "./routes/stripe.js";
+import { hashPii } from "./security/pii.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -41,13 +42,22 @@ const verifySchema = z.object({
 });
 
 function inferSubjectType(method: VerificationMethod): SubjectType {
-  if (method === "BUSINESS_ORC") return "BUSINESS";
+  if (method === "BUSINESS_ORC") {
+    return "BUSINESS";
+  }
+
   return "INDIVIDUAL";
 }
 
 function inferTier(method: VerificationMethod): VerificationTier {
-  if (method === "PHONE_OTP" || method === "GHANA_CARD") return "INDIVIDUAL";
-  if (method === "BUSINESS_ORC") return "BUSINESS";
+  if (method === "PHONE_OTP" || method === "GHANA_CARD") {
+    return "INDIVIDUAL";
+  }
+
+  if (method === "BUSINESS_ORC") {
+    return "BUSINESS";
+  }
+
   if (method === "BVN" || method === "NIN") {
     return "ENHANCED";
   }
@@ -76,6 +86,11 @@ app.post("/v1/verify", async (request, reply) => {
   const subjectType = inferSubjectType(data.method);
   const tier = inferTier(data.method);
 
+  const status =
+    data.method === "PHONE_OTP"
+      ? IdentityVerificationStatus.OTP_SENT
+      : IdentityVerificationStatus.VERIFIED;
+
   const subject = await prisma.subject.upsert({
     where: {
       id: data.subjectId
@@ -91,22 +106,36 @@ app.post("/v1/verify", async (request, reply) => {
     }
   });
 
+  const completedAt =
+    status === IdentityVerificationStatus.VERIFIED ? new Date() : null;
+
   const verification = await prisma.verificationSession.create({
     data: {
       subjectId: subject.id,
       method: data.method,
-      status:
-        data.method === "PHONE_OTP"
-          ? IdentityVerificationStatus.OTP_SENT
-          : IdentityVerificationStatus.VERIFIED,
+      status,
       registryResponse: {
         provider: "mock",
-        verified: data.method !== "PHONE_OTP",
-        method: data.method
+        verified: status === IdentityVerificationStatus.VERIFIED,
+        method: data.method,
+        phoneHash: hashPii(data.phone),
+        nationalIdHash: hashPii(data.nationalId)
       },
-      completedAt: data.method === "PHONE_OTP" ? null : new Date()
+      completedAt
     }
   });
+
+  if (status === IdentityVerificationStatus.VERIFIED) {
+    await prisma.subject.update({
+      where: {
+        id: subject.id
+      },
+      data: {
+        verificationTier: tier,
+        tierUpdatedAt: new Date()
+      }
+    });
+  }
 
   return reply.status(200).send({
     verificationId: verification.id,
@@ -116,7 +145,11 @@ app.post("/v1/verify", async (request, reply) => {
 });
 
 app.get("/v1/tier/:subjectId", async (request, reply) => {
-  const params = z.object({ subjectId: z.string().min(1) }).parse(request.params);
+  const params = z
+    .object({
+      subjectId: z.string().min(1)
+    })
+    .parse(request.params);
 
   const subject = await prisma.subject.findUnique({
     where: {
@@ -141,33 +174,14 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
     });
   }
 
-  const verifiedMethods = subject.verifications
-    .filter((verification) => verification.status === "VERIFIED")
-    .map((verification) => verification.method);
-
-  let tier: VerificationTier = "UNVERIFIED";
-
-  if (
-    verifiedMethods.includes("GHANA_CARD") ||
-    verifiedMethods.includes("BVN") ||
-    verifiedMethods.includes("NIN")
-  ) {
-    tier = "ENHANCED";
-  } else if (verifiedMethods.includes("BUSINESS_ORC")) {
-    tier = "BUSINESS";
-  } else if (
-    verifiedMethods.includes("PHONE_OTP") ||
-    subject.verifications.some((verification) => verification.status === "OTP_SENT")
-  ) {
-    tier = "INDIVIDUAL";
-  }
+  const storedTier = subject.verificationTier as VerificationTier;
 
   return reply.status(200).send({
     subjectId: subject.id,
-    tier,
-    confidence: tier === "UNVERIFIED" ? 0.1 : 0.75,
-    tierCeiling: TIER_CEILINGS[tier],
-    tierUpdatedAt: subject.updatedAt.toISOString()
+    tier: storedTier,
+    confidence: storedTier === "UNVERIFIED" ? 0.1 : 0.75,
+    tierCeiling: TIER_CEILINGS[storedTier],
+    tierUpdatedAt: subject.tierUpdatedAt?.toISOString() ?? null
   });
 });
 
