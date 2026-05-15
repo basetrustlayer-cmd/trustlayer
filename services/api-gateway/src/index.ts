@@ -6,6 +6,7 @@ import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerStripeRoutes } from "./routes/stripe.js";
 import { registerMarketplaceEventRoutes } from "./routes/marketplace-events.js";
+import { registerScoreHistoryRoutes } from "./routes/score-history.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import {
@@ -27,6 +28,7 @@ await registerApiKeyRoutes(app);
 await registerBillingRoutes(app);
 await registerStripeRoutes(app);
 await registerMarketplaceEventRoutes(app);
+await registerScoreHistoryRoutes(app);
 
 const TIER_CEILINGS = {
   UNVERIFIED: 30,
