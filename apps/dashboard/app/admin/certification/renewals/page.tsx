@@ -5,11 +5,20 @@ import { useState } from "react";
 type RenewalNotificationResult = {
   scanned: number;
   notificationsCreated: number;
+  emailsQueued: number;
   notifications: Array<{
-    id: string;
-    action: string;
-    notes: string | null;
-    createdAt: string;
+    notification: {
+      id: string;
+      action: string;
+      notes: string | null;
+      createdAt: string;
+    };
+    email: {
+      id: string;
+      action: string;
+      notes: string | null;
+      createdAt: string;
+    };
   }>;
   error?: string;
 };
@@ -54,16 +63,18 @@ export default function RenewalNotificationsPage() {
             <>
               <p>Approved records scanned: {result.scanned}</p>
               <p>Notifications created: {result.notificationsCreated}</p>
+              <p>Emails queued: {result.emailsQueued}</p>
 
               {result.notifications.length ? (
                 <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-                  {result.notifications.map((notification) => (
-                    <article key={notification.id} style={{ border: "1px solid #ddd", padding: 12 }}>
+                  {result.notifications.map((item) => (
+                    <article key={item.notification.id} style={{ border: "1px solid #ddd", padding: 12 }}>
                       <p>
-                        <strong>{notification.action}</strong>
+                        <strong>{item.notification.action}</strong>
                       </p>
-                      <p>{notification.notes}</p>
-                      <p>{new Date(notification.createdAt).toLocaleString()}</p>
+                      <p>{item.notification.notes}</p>
+                      <p>{item.email.notes}</p>
+                      <p>{new Date(item.notification.createdAt).toLocaleString()}</p>
                     </article>
                   ))}
                 </div>
