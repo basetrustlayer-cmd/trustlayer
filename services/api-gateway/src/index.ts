@@ -36,9 +36,9 @@ function inferSubjectType(method: VerificationMethod): SubjectType {
 }
 
 function inferTier(method: VerificationMethod): VerificationTier {
-  if (method === "PHONE_OTP") return "INDIVIDUAL";
+  if (method === "PHONE_OTP" || method === "GHANA_CARD") return "INDIVIDUAL";
   if (method === "BUSINESS_ORC") return "BUSINESS";
-  if (method === "GHANA_CARD" || method === "BVN" || method === "NIN") {
+  if (method === "BVN" || method === "NIN") {
     return "ENHANCED";
   }
 
