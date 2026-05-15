@@ -133,7 +133,7 @@ export default function AdminVerificationPage() {
                   padding: 24
                 }}
               >
-                <h2>{request.title}</h2>
+                <h2><a href={`/admin/verification/${request.id}`}>{request.title}</a></h2>
                 <p>
                   <strong>Status:</strong> {formatStatus(request.status)}
                 </p>
