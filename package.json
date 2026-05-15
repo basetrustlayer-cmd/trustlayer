@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "openapi:lock": "node scripts/check-openapi-lock.js",
-    "openapi:mock": "pnpm exec prism mock -h 0.0.0.0 api-spec/openapi.yaml"
+    "openapi:mock": "pnpm exec prism mock -h 0.0.0.0 api-spec/openapi.yaml",
+    "openapi:test": "pnpm exec dredd api-spec/openapi.yaml http://127.0.0.1:4010 --server \"pnpm openapi:mock\" --server-wait 5 --header \"X-API-Key: tl_test_mock_key\""
   },
   "pnpm": {
     "overrides": {
@@ -26,6 +27,7 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
+    "dredd": "^14.1.0",
     "eslint": "^9.39.4",
     "prettier": "^3.8.3",
     "prisma": "^6.0.0",
