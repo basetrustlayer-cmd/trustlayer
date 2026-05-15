@@ -140,6 +140,21 @@ export default function CertificationBadgePage() {
               </section>
 
               <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
+                <h2>Verification QR Code</h2>
+                <p>Use this QR card on printed certificates, proposals, and marketplace profiles.</p>
+                <img
+                  src="/api/certification/qr"
+                  alt="TrustLayer verification QR code"
+                  style={{ width: 220, height: 220, border: "1px solid #ddd" }}
+                />
+                <p>
+                  <a href="/api/certification/qr" target="_blank" rel="noreferrer">
+                    Open QR image
+                  </a>
+                </p>
+              </section>
+
+              <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
                 <h2>Printable Certificate</h2>
                 <p>
                   This certifies that <strong>{data.organizationName}</strong> has
