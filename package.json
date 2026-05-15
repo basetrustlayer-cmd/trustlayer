@@ -10,7 +10,9 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "openapi:lock": "node scripts/check-openapi-lock.js",
+    "openapi:mock": "docker compose -f docker-compose.prism.yml up prism"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
