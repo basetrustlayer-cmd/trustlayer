@@ -81,7 +81,8 @@ jobs:
       - name: Install Gitleaks
         run: |
           mkdir -p ./bin
-          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh | sh -s -- -b ./bin
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.30.1_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz -C ./bin gitleaks
           ./bin/gitleaks version
       - name: Run Gitleaks working-tree scan
         run: ./bin/gitleaks detect --source . --no-git --verbose
