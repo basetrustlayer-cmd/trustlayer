@@ -3,6 +3,7 @@ import { VerificationStatus } from "@prisma/client";
 import { prisma } from "../../../../../lib/db";
 import { getSessionUser } from "../../../../../lib/session";
 import { createAuditLog } from "../../../../../lib/audit/log";
+import { getSignedDownloadUrl } from "../../../../../lib/storage/signed-url";
 
 function isVerificationStatus(value: string): value is VerificationStatus {
   return Object.values(VerificationStatus).includes(value as VerificationStatus);
@@ -26,28 +27,44 @@ export async function GET(
 
   const request = await prisma.verificationRequest.findUnique({
     where: { id },
-    include: {
-      organization: true
-    }
+    include: { organization: true }
   });
 
   if (!request) {
     return NextResponse.json({ error: "Verification request not found" }, { status: 404 });
   }
 
+  const documents = await prisma.verificationDocument.findMany({
+    where: { verificationRequestId: id },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const hydratedDocuments = await Promise.all(
+    documents.map(async (document) => ({
+      id: document.id,
+      filename: document.filename,
+      contentType: document.contentType,
+      sizeBytes: document.sizeBytes,
+      reviewStatus: document.reviewStatus,
+      reviewNotes: document.reviewNotes,
+      reviewedAt: document.reviewedAt?.toISOString() ?? null,
+      createdAt: document.createdAt.toISOString(),
+      downloadUrl: await getSignedDownloadUrl(document.storageKey)
+    }))
+  );
+
   const auditLogs = await prisma.auditLog.findMany({
     where: {
       entityType: "VerificationRequest",
       entityId: id
     },
-    orderBy: {
-      createdAt: "desc"
-    },
+    orderBy: { createdAt: "desc" },
     take: 25
   });
 
   return NextResponse.json({
     request,
+    documents: hydratedDocuments,
     auditLogs
   });
 }
