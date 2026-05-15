@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/db";
-import { getSessionUser } from "../../../../lib/session";
-import { assertBadgeAccessAllowed } from "../../../../lib/billing/limits";
+import { prisma } from "../../../../../lib/db";
 
 function getScoreBand(score: number) {
   if (score >= 85) return "high_trust";
@@ -11,34 +9,25 @@ function getScoreBand(score: number) {
   return "unscored";
 }
 
-export async function GET() {
-  const user = await getSessionUser();
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const platform = await prisma.platform.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
-    include: { organization: true }
+  const platform = await prisma.platform.findUnique({
+    where: { slug },
+    include: {
+      organization: true
+    }
   });
 
   if (!platform?.organizationId || !platform.organization) {
-    return NextResponse.json(
-      { error: "No organization is linked to this platform." },
-      { status: 403 }
-    );
-  }
-
-  const access = await assertBadgeAccessAllowed(platform.organizationId);
-
-  if (!access.allowed) {
-    return NextResponse.json({ error: access.reason }, { status: 403 });
+    return NextResponse.json({ error: "Verification profile not found" }, { status: 404 });
   }
 
   const subject = await prisma.subject.findFirst({
-    where: { externalId: user.id }
+    where: { externalId: platform.userId }
   });
 
   const score = subject
@@ -72,12 +61,19 @@ export async function GET() {
 
   const totalDocuments = approvedVerification?.documents.length ?? 0;
   const currentScore = score?.score ?? 0;
-  const eligible = Boolean(approvedVerification) && currentScore >= 70;
+  const verified = Boolean(approvedVerification) && currentScore >= 70;
+  const issuedAt = approvedVerification?.updatedAt ?? null;
+  const expiresAt = issuedAt
+    ? new Date(issuedAt.getTime() + 365 * 24 * 60 * 60 * 1000)
+    : null;
 
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+  const now = new Date();
+  const expired = Boolean(expiresAt && expiresAt < now);
+  const status = !verified ? "PENDING" : expired ? "EXPIRED" : "ACTIVE";
 
   return NextResponse.json({
-    eligible,
+    verified: verified && !expired,
+    status,
     organizationName: platform.organization.name,
     platformName: platform.name,
     platformSlug: platform.slug,
@@ -85,16 +81,13 @@ export async function GET() {
     band: getScoreBand(currentScore),
     confidence: score?.confidence ?? 0.1,
     verificationTier: subject?.verificationTier ?? "UNVERIFIED",
-    approvedVerification: Boolean(approvedVerification),
+    certificateId: approvedVerification
+      ? `TL-${issuedAt?.getFullYear() ?? now.getFullYear()}-${approvedVerification.id.slice(-8).toUpperCase()}`
+      : null,
     approvedVerificationId: approvedVerification?.id ?? null,
     approvedDocuments,
     totalDocuments,
-    badgeLabel: eligible ? "TrustLayer Verified" : "TrustLayer Pending",
-    issuedAt: eligible ? new Date().toISOString() : null,
-    expiresAt: eligible
-      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      : null,
-    verificationUrl,
-    embedCode: `<a href="${verificationUrl}" target="_blank" rel="noreferrer">TrustLayer Verified</a>`
+    issuedAt: issuedAt?.toISOString() ?? null,
+    expiresAt: expiresAt?.toISOString() ?? null
   });
 }

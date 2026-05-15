@@ -137,7 +137,7 @@ export async function GET() {
   const issuedAt = new Date();
   const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
   const certificateId = `TL-${issuedAt.getFullYear()}-${approvedVerification.id.slice(-8).toUpperCase()}`;
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/certification/badge`;
+  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
 
   const pdf = buildCertificatePdf({
     certificateId,
