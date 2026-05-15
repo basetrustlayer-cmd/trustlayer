@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type VerificationRequest = {
   id: string;
@@ -12,12 +12,14 @@ type VerificationRequest = {
 
 const nextActions: Record<string, { label: string; status: string } | null> = {
   DRAFT: { label: "Submit for review", status: "SUBMITTED" },
-  SUBMITTED: { label: "Start review", status: "IN_REVIEW" },
-  IN_REVIEW: { label: "Approve", status: "APPROVED" },
+  SUBMITTED: null,
+  IN_REVIEW: null,
   APPROVED: { label: "Mark expired", status: "EXPIRED" },
   REJECTED: { label: "Return to draft", status: "DRAFT" },
   EXPIRED: { label: "Resubmit", status: "SUBMITTED" }
 };
+
+const statusOrder = ["DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED"];
 
 function formatStatus(status: string) {
   return status
@@ -27,9 +29,20 @@ function formatStatus(status: string) {
     .join(" ");
 }
 
+function getProgress(status: string) {
+  const index = statusOrder.indexOf(status);
+
+  if (status === "REJECTED") return 50;
+  if (status === "EXPIRED") return 100;
+  if (index < 0) return 0;
+
+  return Math.round(((index + 1) / statusOrder.length) * 100);
+}
+
 export default function VerificationRequestsPage() {
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [status, setStatus] = useState("");
+  const [filter, setFilter] = useState("ALL");
 
   async function loadRequests() {
     const response = await fetch("/api/verification/requests");
@@ -40,6 +53,25 @@ export default function VerificationRequestsPage() {
   useEffect(() => {
     loadRequests();
   }, []);
+
+  const filteredRequests = useMemo(() => {
+    if (filter === "ALL") {
+      return requests;
+    }
+
+    return requests.filter((request) => request.status === filter);
+  }, [filter, requests]);
+
+  const counts = useMemo(() => {
+    return requests.reduce<Record<string, number>>(
+      (acc, request) => {
+        acc.ALL += 1;
+        acc[request.status] = (acc[request.status] || 0) + 1;
+        return acc;
+      },
+      { ALL: 0 }
+    );
+  }, [requests]);
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,7 +89,8 @@ export default function VerificationRequestsPage() {
     });
 
     if (!response.ok) {
-      setStatus("Could not create verification request.");
+      const data = await response.json();
+      setStatus(data.error || "Could not create verification request.");
       return;
     }
 
@@ -77,8 +110,9 @@ export default function VerificationRequestsPage() {
       body: JSON.stringify({ id, status: nextStatus })
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const data = await response.json();
       setStatus(data.error || "Could not update verification request.");
       return;
     }
@@ -88,21 +122,67 @@ export default function VerificationRequestsPage() {
   }
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 900 }}>
-      <h1>Verification Requests</h1>
+    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 1100 }}>
       <p>
-        Create and manage verification packages for customers, buyers, lenders,
-        and marketplace counterparties.
+        <a href="/">Back to dashboard</a>
       </p>
 
-      <form onSubmit={handleCreate} style={{ display: "grid", gap: 12, marginTop: 24 }}>
+      <h1>Verification Management</h1>
+      <p>
+        Create, submit, and track verification packages for customers, vendors,
+        lenders, marketplace sellers, workers, and counterparties.
+      </p>
+
+      <section
+        style={{
+          marginTop: 24,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 12
+        }}
+      >
+        {["ALL", "DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED", "REJECTED", "EXPIRED"].map(
+          (item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setFilter(item)}
+              style={{
+                padding: 14,
+                border: "1px solid #ddd",
+                background: filter === item ? "#111" : "#fff",
+                color: filter === item ? "#fff" : "#111",
+                textAlign: "left"
+              }}
+            >
+              <strong>{formatStatus(item)}</strong>
+              <br />
+              {counts[item] || 0}
+            </button>
+          )
+        )}
+      </section>
+
+      <form
+        onSubmit={handleCreate}
+        style={{
+          display: "grid",
+          gap: 12,
+          marginTop: 32,
+          padding: 20,
+          border: "1px solid #ddd"
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Create Verification Request</h2>
         <input
           name="title"
           placeholder="Example: Supplier onboarding verification"
           required
           style={{ padding: 12 }}
         />
-        <button type="submit" style={{ padding: 12 }}>Create verification request</button>
+        <button type="submit" style={{ padding: 12 }}>
+          Create verification request
+        </button>
       </form>
 
       {status ? <p style={{ marginTop: 16 }}>{status}</p> : null}
@@ -110,18 +190,50 @@ export default function VerificationRequestsPage() {
       <section style={{ marginTop: 32 }}>
         <h2>Requests</h2>
 
-        {requests.length === 0 ? (
-          <p>No verification requests created yet.</p>
+        {filteredRequests.length === 0 ? (
+          <p>No verification requests found for this filter.</p>
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {requests.map((request) => {
+          <div style={{ display: "grid", gap: 16 }}>
+            {filteredRequests.map((request) => {
               const action = nextActions[request.status];
+              const progress = getProgress(request.status);
 
               return (
-                <article key={request.id} style={{ border: "1px solid #ddd", padding: 16 }}>
+                <article
+                  key={request.id}
+                  style={{
+                    border: "1px solid #ddd",
+                    padding: 20
+                  }}
+                >
                   <h3>{request.title}</h3>
-                  <p>Status: {formatStatus(request.status)}</p>
-                  <p>Created: {new Date(request.createdAt).toLocaleDateString()}</p>
+                  <p>
+                    <strong>Status:</strong> {formatStatus(request.status)}
+                  </p>
+
+                  <div
+                    style={{
+                      height: 10,
+                      border: "1px solid #ddd",
+                      maxWidth: 520,
+                      marginBottom: 12
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${progress}%`,
+                        background: "#111"
+                      }}
+                    />
+                  </div>
+
+                  <p>
+                    Created: {new Date(request.createdAt).toLocaleDateString()}
+                  </p>
+                  <p>
+                    Updated: {new Date(request.updatedAt).toLocaleDateString()}
+                  </p>
 
                   {action ? (
                     <button
@@ -131,15 +243,15 @@ export default function VerificationRequestsPage() {
                     >
                       {action.label}
                     </button>
-                  ) : null}
+                  ) : (
+                    <p>No customer-side action available.</p>
+                  )}
                 </article>
               );
             })}
           </div>
         )}
       </section>
-
-      <p style={{ marginTop: 24 }}><a href="/">Back to dashboard</a></p>
     </main>
   );
 }
