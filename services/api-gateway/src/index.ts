@@ -5,6 +5,7 @@ import { apiKeyAuthHook } from "./auth/api-key-auth.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerStripeRoutes } from "./routes/stripe.js";
+import { registerMarketplaceEventRoutes } from "./routes/marketplace-events.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import {
@@ -25,6 +26,7 @@ app.addHook("preHandler", apiKeyAuthHook);
 await registerApiKeyRoutes(app);
 await registerBillingRoutes(app);
 await registerStripeRoutes(app);
+await registerMarketplaceEventRoutes(app);
 
 const TIER_CEILINGS = {
   UNVERIFIED: 30,
