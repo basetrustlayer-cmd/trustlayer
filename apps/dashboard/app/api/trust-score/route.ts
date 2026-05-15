@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
 import { getSessionUser } from "../../../lib/session";
 import { calculateTrustScoreDetailed } from "../../../lib/trust-score/calculate";
+import { assertTrustScoreAccessAllowed } from "../../../lib/billing/limits";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -10,21 +11,43 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const subject = await prisma.subject.findFirst({
-    where: {
-      externalId: user.id
-    },
-    include: {
-      verifications: true
-    }
-  });
-
   const platform = await prisma.platform.findFirst({
     where: {
       userId: user.id
     },
     orderBy: {
       createdAt: "asc"
+    }
+  });
+
+  if (!platform?.organizationId) {
+    return NextResponse.json(
+      {
+        error: "No organization is linked to this platform."
+      },
+      { status: 403 }
+    );
+  }
+
+  const access = await assertTrustScoreAccessAllowed(
+    platform.organizationId
+  );
+
+  if (!access.allowed) {
+    return NextResponse.json(
+      {
+        error: access.reason
+      },
+      { status: 403 }
+    );
+  }
+
+  const subject = await prisma.subject.findFirst({
+    where: {
+      externalId: user.id
+    },
+    include: {
+      verifications: true
     }
   });
 
@@ -42,7 +65,7 @@ export async function GET() {
     negativeReviewCount: 0,
     disputeCount: 0,
     confirmedFraudFlag: false,
-    platformCreatedAt: platform?.createdAt ?? null
+    platformCreatedAt: platform.createdAt
   });
 
   return NextResponse.json({
