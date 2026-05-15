@@ -176,3 +176,5 @@ try {
   app.log.error(error);
   process.exit(1);
 }
+
+export { WebhookDeliveryService } from "./webhooks/webhook-delivery.js";
