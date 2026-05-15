@@ -37,8 +37,6 @@ model Organization {
 
   memberships          Membership[]
   verificationRequests VerificationRequest[]
-  companyProfile       CompanyProfile?
-  complianceDocuments  ComplianceDocument[]
   auditLogs            AuditLog[]
   platforms            Platform[]
   subscription         Subscription?
@@ -81,73 +79,6 @@ model VerificationRequest {
   status         VerificationStatus @default(DRAFT)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-}
-
-model CompanyProfile {
-  id             String   @id @default(cuid())
-  organizationId String   @unique
-  legalName      String
-  tradeName      String?
-  entityType     String
-  taxId          String?
-  website        String?
-  phone          String?
-  addressLine1   String
-  addressLine2   String?
-  city           String
-  state          String
-  postalCode     String
-  country        String   @default("GH")
-  industry       String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-}
-
-enum ComplianceDocumentType {
-  CERTIFICATE_OF_INCORPORATION
-  TAX_IDENTIFICATION
-  VAT_REGISTRATION
-  BUSINESS_OPERATING_PERMIT
-  BENEFICIAL_OWNERSHIP
-  SOCIAL_SECURITY_REGISTRATION
-  IMPORT_EXPORT_LICENSE
-  FOOD_DRUG_AUTHORITY_APPROVAL
-  ENVIRONMENTAL_PERMIT
-  INSURANCE_CERTIFICATE
-  BANK_REFERENCE
-  BUSINESS_LICENSE
-  SAFETY_CERTIFICATE
-  OTHER
-}
-
-enum ComplianceDocumentStatus {
-  DRAFT
-  SUBMITTED
-  IN_REVIEW
-  APPROVED
-  REJECTED
-  EXPIRED
-}
-
-model ComplianceDocument {
-  id             String                   @id @default(cuid())
-  organizationId String
-  type           ComplianceDocumentType
-  status         ComplianceDocumentStatus @default(SUBMITTED)
-  title          String
-  fileName       String
-  filePath       String
-  mimeType       String
-  sizeBytes      Int
-  notes          String?
-  issuedAt       DateTime?
-  expiresAt      DateTime?
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
