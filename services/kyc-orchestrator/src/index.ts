@@ -4,24 +4,40 @@ import type {
   KycVerificationResult
 } from "./types/index.js";
 import { MockKycProvider } from "./providers/mock-provider.js";
+import { KycProviderRouter } from "./providers/routing/provider-router.js";
+import { GhanaCardProvider } from "./providers/adapters/ghana-card-provider.js";
+import { PaystackIdentityProvider } from "./providers/adapters/paystack-identity-provider.js";
+import { FlutterwaveVerifyProvider } from "./providers/adapters/flutterwave-verify-provider.js";
+import { StripeIdentityProvider } from "./providers/adapters/stripe-identity-provider.js";
 
 export * from "./types/index.js";
+export * from "./errors/provider-error.js";
 export { MockKycProvider };
+export { GhanaCardProvider };
+export { PaystackIdentityProvider };
+export { FlutterwaveVerifyProvider };
+export { StripeIdentityProvider };
+export { KycProviderRouter };
 
 export class KycOrchestrator {
-  constructor(private readonly providers: KycProviderAdapter[]) {}
+  private readonly router: KycProviderRouter;
+
+  constructor(private readonly providers: KycProviderAdapter[]) {
+    this.router = new KycProviderRouter(providers);
+  }
 
   async verify(request: KycVerificationRequest): Promise<KycVerificationResult> {
-    const provider = this.providers.find((candidate) => candidate.supports(request));
-
-    if (!provider) {
-      throw new Error(`No KYC provider supports method ${request.method} in ${request.country}`);
-    }
-
+    const provider = this.router.selectProvider(request);
     return provider.verify(request);
   }
 }
 
 export function createDefaultKycOrchestrator(): KycOrchestrator {
-  return new KycOrchestrator([new MockKycProvider()]);
+  return new KycOrchestrator([
+    new GhanaCardProvider(),
+    new PaystackIdentityProvider(),
+    new FlutterwaveVerifyProvider(),
+    new StripeIdentityProvider(),
+    new MockKycProvider()
+  ]);
 }
