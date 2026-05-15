@@ -4,46 +4,19 @@ import { prisma } from "../../../lib/db";
 import { getSessionUser } from "../../../lib/session";
 
 const schema = z.object({
-  legalName: z.string().min(2),
-  tradeName: z.string().optional(),
-  entityType: z.string().min(2),
-  taxId: z.string().optional(),
-  website: z.string().optional(),
-  phone: z.string().optional(),
-  addressLine1: z.string().min(2),
-  addressLine2: z.string().optional(),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  postalCode: z.string().min(2),
-  country: z.string().default("US"),
-  industry: z.string().min(2)
+  name: z.string().min(2),
+  website: z.string().url().optional().or(z.literal("")),
+  contactEmail: z.string().email(),
+  planTier: z
+    .enum(["SANDBOX", "STARTER", "GROWTH", "ENTERPRISE"])
+    .default("SANDBOX")
 });
 
-async function getOrCreateOrganization(userId: string, legalName?: string) {
-  const membership = await prisma.membership.findFirst({
-    where: { userId },
-    include: { organization: true }
-  });
-
-  if (membership) return membership.organization;
-
-  const baseName = legalName || "New Organization";
-  const slug = `${baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${Date.now()}`;
-
-  const organization = await prisma.organization.create({
-    data: {
-      name: baseName,
-      slug,
-      memberships: {
-        create: {
-          userId,
-          role: "OWNER"
-        }
-      }
-    }
-  });
-
-  return organization;
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 export async function GET() {
@@ -53,20 +26,12 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const membership = await prisma.membership.findFirst({
+  const platform = await prisma.platform.findFirst({
     where: { userId: user.id },
-    include: {
-      organization: {
-        include: {
-          companyProfile: true
-        }
-      }
-    }
+    orderBy: { createdAt: "asc" }
   });
 
-  return NextResponse.json({
-    companyProfile: membership?.organization.companyProfile ?? null
-  });
+  return NextResponse.json({ platform });
 }
 
 export async function POST(request: Request) {
@@ -80,26 +45,44 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid company profile data" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid platform registration data" },
+      { status: 400 }
+    );
   }
 
-  const organization = await getOrCreateOrganization(user.id, parsed.data.legalName);
+  const data = parsed.data;
+  const website =
+    typeof data.website === "string" && data.website.length > 0
+      ? data.website
+      : null;
 
-  const profile = await prisma.companyProfile.upsert({
-    where: {
-      organizationId: organization.id
-    },
-    create: {
-      organizationId: organization.id,
-      ...parsed.data
-    },
-    update: parsed.data
+  const existing = await prisma.platform.findFirst({
+    where: { userId: user.id }
   });
 
-  await prisma.organization.update({
-    where: { id: organization.id },
-    data: { name: parsed.data.legalName }
-  });
+  const baseSlug = slugify(data.name);
 
-  return NextResponse.json({ companyProfile: profile });
+  const platform = existing
+    ? await prisma.platform.update({
+        where: { id: existing.id },
+        data: {
+          name: data.name,
+          website,
+          contactEmail: data.contactEmail,
+          planTier: data.planTier
+        }
+      })
+    : await prisma.platform.create({
+        data: {
+          userId: user.id,
+          name: data.name,
+          slug: `${baseSlug}-${Date.now()}`,
+          website,
+          contactEmail: data.contactEmail,
+          planTier: data.planTier
+        }
+      });
+
+  return NextResponse.json({ platform });
 }
