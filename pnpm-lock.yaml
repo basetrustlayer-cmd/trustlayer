@@ -130,6 +130,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.0
         version: 10.1.0
+      '@trustlayer/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       fastify:
         specifier: ^5.0.0
         version: 5.8.5
