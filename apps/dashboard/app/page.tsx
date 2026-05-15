@@ -9,45 +9,51 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const membership = await prisma.membership.findFirst({
+  const platform = await prisma.platform.findFirst({
     where: { userId: user.id },
-    include: {
-      organization: {
-        include: {
-          companyProfile: true
-        }
-      }
-    }
+    orderBy: { createdAt: "asc" }
   });
 
-  const hasCompanyProfile = Boolean(membership?.organization.companyProfile);
+  const hasPlatform = Boolean(platform);
 
   return (
     <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}>
       <h1>TrustLayer Dashboard</h1>
-      <p><a href="/vendors">Browse public vendor directory</a></p>
-      <p>Vendor verification, compliance status, and trust workflows.</p>
 
-      <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd", maxWidth: 640 }}>
-        <h2>Onboarding Status</h2>
-        <p>Company Profile: {hasCompanyProfile ? "Complete" : "Incomplete"}</p>
+      <p>
+        Identity verification, TrustScore APIs, API key management, and webhooks
+        for platform integrators.
+      </p>
+
+      <section
+        style={{
+          marginTop: 24,
+          padding: 20,
+          border: "1px solid #ddd",
+          maxWidth: 640
+        }}
+      >
+        <h2>Platform Registration</h2>
+        <p>Status: {hasPlatform ? "Complete" : "Incomplete"}</p>
         <a href="/onboarding/company">
-          {hasCompanyProfile ? "Edit company profile" : "Complete company profile"}
+          {hasPlatform ? "Edit platform registration" : "Complete platform registration"}
         </a>
       </section>
 
-      <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd", maxWidth: 640 }}>
-        <h2>Compliance Documents</h2>
-        <p>Upload incorporation, tax, VAT, permits, insurance, and sector-specific verification documents.</p>
-        <a href="/compliance/documents">Manage compliance documents</a>
-        <br />
-        <a href="/compliance/status">View compliance status</a>
-        <br />
-        <a href="/trust-score">View trust score</a>
+      <section
+        style={{
+          marginTop: 24,
+          padding: 20,
+          border: "1px solid #ddd",
+          maxWidth: 640
+        }}
+      >
+        <h2>Developer Tools</h2>
+        <a href="/trust-score">View TrustScore</a>
         <br />
         <a href="/verification/requests">Manage verification requests</a>
         <br />
-        <a href="/certification/badge">View certification badge</a>
+        <a href="/certification/badge">View trust badge</a>
       </section>
 
       <section style={{ marginTop: 24 }}>
@@ -55,7 +61,9 @@ export default async function DashboardPage() {
         <p>Email: {user.email}</p>
         <p>Role: {user.role}</p>
         <form action="/api/auth/logout" method="post">
-          <button type="submit" style={{ padding: 12 }}>Log out</button>
+          <button type="submit" style={{ padding: 12 }}>
+            Log out
+          </button>
         </form>
       </section>
     </main>

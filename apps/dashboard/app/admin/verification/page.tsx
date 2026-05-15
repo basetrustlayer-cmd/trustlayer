@@ -7,20 +7,6 @@ type VerificationRequest = {
   title: string;
   status: string;
   createdAt: string;
-  organization: {
-    name: string;
-    companyProfile?: {
-      legalName: string;
-      country: string;
-      industry: string;
-    } | null;
-    complianceDocuments: {
-      id: string;
-      title: string;
-      type: string;
-      status: string;
-    }[];
-  };
 };
 
 function formatStatus(status: string) {
@@ -68,9 +54,9 @@ export default function AdminVerificationPage() {
   }
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 1100 }}>
+    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 960 }}>
       <h1>Admin Verification Console</h1>
-      <p>Review vendor verification requests and approve or reject them.</p>
+      <p>Review identity verification requests.</p>
 
       {message ? <p style={{ marginTop: 16 }}>{message}</p> : null}
 
@@ -90,48 +76,8 @@ export default function AdminVerificationPage() {
               >
                 <h2>{request.title}</h2>
                 <p><strong>Status:</strong> {formatStatus(request.status)}</p>
-                <p><strong>Organization:</strong> {request.organization.name}</p>
 
-                {request.organization.companyProfile ? (
-                  <>
-                    <p>
-                      <strong>Legal Name:</strong>{" "}
-                      {request.organization.companyProfile.legalName}
-                    </p>
-                    <p>
-                      <strong>Country:</strong>{" "}
-                      {request.organization.companyProfile.country}
-                    </p>
-                    <p>
-                      <strong>Industry:</strong>{" "}
-                      {request.organization.companyProfile.industry}
-                    </p>
-                  </>
-                ) : (
-                  <p>No company profile submitted.</p>
-                )}
-
-                <h3>Compliance Documents</h3>
-
-                {request.organization.complianceDocuments.length === 0 ? (
-                  <p>No documents uploaded.</p>
-                ) : (
-                  <ul>
-                    {request.organization.complianceDocuments.map((doc) => (
-                      <li key={doc.id}>
-                        {doc.title} ({formatStatus(doc.type)})
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    marginTop: 20
-                  }}
-                >
+                <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                   <button
                     type="button"
                     onClick={() => updateStatus(request.id, "IN_REVIEW")}
