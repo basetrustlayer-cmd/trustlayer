@@ -136,7 +136,7 @@ model Membership {
   createdAt      DateTime       @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
 }
@@ -279,16 +279,17 @@ model Platform {
   description    String?
   website        String?
   contactEmail String?
-  apiKeyHash     String?
   environment    ApiKeyEnvironment @default(TEST)
-  tier           PlanTier          @default(SANDBOX)
   planTier       PlanTier          @default(SANDBOX)
+  apiScopes     Json?
   isActive       Boolean           @default(true)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKeys       ApiKey[]
+  webhooks      Webhook[]
 }
 
 model Subject {
@@ -296,10 +297,14 @@ model Subject {
   type        SubjectType
   externalId  String
   country     String      @default("GH")
+  verificationTier String   @default("UNVERIFIED")
+  tierUpdatedAt DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   verifications VerificationSession[]
+  trustScores   TrustScore[]
+  scoreHistory  ScoreHistory[]
 
   @@index([externalId])
 }
@@ -317,4 +322,102 @@ model VerificationSession {
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@index([subjectId, createdAt])
+}
+
+
+model ApiKey {
+  id          String            @id @default(cuid())
+  platformId  String
+  keyPrefix   String
+  keyHash     String            @unique
+  scopes      Json
+  environment ApiKeyEnvironment @default(TEST)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([keyPrefix])
+  @@index([revokedAt])
+}
+
+
+model Webhook {
+  id          String   @id @default(cuid())
+  platformId  String
+  url         String
+  events      Json
+  secretHash  String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  platform   Platform          @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([platformId])
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id            String    @id @default(cuid())
+  webhookId     String
+  eventType     String
+  status        String
+  responseCode  Int?
+  attemptCount  Int       @default(0)
+  deliveredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([eventType])
+  @@index([status])
+}
+
+
+model TrustScore {
+  id                 String   @id @default(cuid())
+  subjectId          String
+  role               String
+  score              Int      @default(0)
+  tierCeiling        Int      @default(30)
+  confidence         Float    @default(0.1)
+  factorIdentity     Int      @default(0)
+  factorTransactions Int      @default(0)
+  factorReviews      Int      @default(0)
+  factorDisputes     Int      @default(0)
+  factorRoleSpecific Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  history ScoreHistory[]
+
+  @@unique([subjectId, role])
+  @@index([subjectId])
+}
+
+model ScoreHistory {
+  id           String   @id @default(cuid())
+  trustScoreId String
+  subjectId    String
+  role         String
+  score        Int
+  tierCeiling  Int
+  confidence   Float
+  factors      Json?
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  trustScore TrustScore @relation(fields: [trustScoreId], references: [id], onDelete: Cascade)
+  subject    Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, role, createdAt])
 }
