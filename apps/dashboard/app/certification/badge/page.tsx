@@ -3,20 +3,30 @@
 import { useEffect, useState } from "react";
 
 type BadgeData = {
+  error?: string;
   eligible: boolean;
   organizationName: string;
-  legalName: string;
-  country: string | null;
-  industry: string | null;
+  platformName: string;
+  platformSlug: string;
   score: number;
   band: string;
+  confidence: number;
+  verificationTier: string;
   approvedVerification: boolean;
+  approvedVerificationId: string | null;
+  approvedDocuments: number;
+  totalDocuments: number;
   badgeLabel: string;
   issuedAt: string | null;
+  expiresAt: string | null;
+  verificationUrl: string;
+  embedCode: string;
 };
 
-function formatBand(band: string) {
-  return band
+function formatLabel(value: string | null | undefined) {
+  if (!value) return "Unknown";
+
+  return value
     .toLowerCase()
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -25,62 +35,133 @@ function formatBand(band: string) {
 
 export default function CertificationBadgePage() {
   const [data, setData] = useState<BadgeData | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/certification/badge")
       .then((res) => res.json())
-      .then(setData);
+      .then((payload) => {
+        if (payload.error) {
+          setMessage(payload.error);
+        }
+
+        setData(payload);
+      });
   }, []);
 
-  if (!data) {
-    return <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}>Loading...</main>;
+  async function copyEmbedCode() {
+    if (!data?.embedCode) return;
+
+    await navigator.clipboard.writeText(data.embedCode);
+    setMessage("Embed code copied.");
+  }
+
+  if (!data && !message) {
+    return (
+      <main style={{ padding: 40, fontFamily: "Arial, sans-serif" }}>
+        Loading...
+      </main>
+    );
   }
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 860 }}>
-      <h1>Certification Badge</h1>
-      <p>
-        Generate a TrustLayer verification badge after admin approval and sufficient trust score.
-      </p>
-
-      <section
-        style={{
-          marginTop: 24,
-          padding: 28,
-          border: "2px solid #111",
-          borderRadius: 12,
-          maxWidth: 520
-        }}
-      >
-        <p style={{ textTransform: "uppercase", letterSpacing: 2, margin: 0 }}>
-          {data.badgeLabel}
-        </p>
-        <h2 style={{ fontSize: 34, marginBottom: 8 }}>{data.legalName}</h2>
-        <p>Trust Score: {data.score}/100</p>
-        <p>Band: {formatBand(data.band)}</p>
-        <p>Country: {data.country || "Not provided"}</p>
-        <p>Industry: {data.industry || "Not provided"}</p>
-        <p>Status: {data.eligible ? "Verified" : "Pending verification"}</p>
-        {data.issuedAt ? <p>Issued: {new Date(data.issuedAt).toLocaleDateString()}</p> : null}
-      </section>
-
-      {!data.eligible ? (
-        <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
-          <h2>Requirements Not Yet Complete</h2>
-          <p>Approved Verification: {data.approvedVerification ? "Yes" : "No"}</p>
-          <p>Minimum Trust Score: 70</p>
-        </section>
-      ) : null}
-
-      <p style={{ marginTop: 24 }}>
-        <a href="/verification/requests">View verification requests</a>
-      </p>
-      <p>
-        <a href="/trust-score">View trust score</a>
-      </p>
+    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 960 }}>
       <p>
         <a href="/">Back to dashboard</a>
       </p>
+
+      <h1>TrustLayer Badge & Certificate</h1>
+      <p>
+        Generate a TrustLayer badge and printable certificate after approval and
+        sufficient trust score.
+      </p>
+
+      {message ? <p style={{ marginTop: 16 }}>{message}</p> : null}
+
+      {data ? (
+        <>
+          <section
+            style={{
+              marginTop: 24,
+              padding: 28,
+              border: "2px solid #111",
+              borderRadius: 12,
+              maxWidth: 620
+            }}
+          >
+            <p style={{ textTransform: "uppercase", letterSpacing: 2, margin: 0 }}>
+              {data.badgeLabel}
+            </p>
+            <h2 style={{ fontSize: 34, marginBottom: 8 }}>
+              {data.organizationName}
+            </h2>
+            <p>Platform: {data.platformName}</p>
+            <p>Trust Score: {data.score}/100</p>
+            <p>Band: {formatLabel(data.band)}</p>
+            <p>Verification Tier: {formatLabel(data.verificationTier)}</p>
+            <p>Confidence: {Math.round(data.confidence * 100)}%</p>
+            <p>Status: {data.eligible ? "Verified" : "Pending verification"}</p>
+            {data.issuedAt ? (
+              <p>Issued: {new Date(data.issuedAt).toLocaleDateString()}</p>
+            ) : null}
+            {data.expiresAt ? (
+              <p>Expires: {new Date(data.expiresAt).toLocaleDateString()}</p>
+            ) : null}
+          </section>
+
+          {!data.eligible ? (
+            <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
+              <h2>Requirements Not Yet Complete</h2>
+              <p>
+                Approved Verification: {data.approvedVerification ? "Yes" : "No"}
+              </p>
+              <p>Minimum Trust Score: 70</p>
+              <p>
+                Approved Documents: {data.approvedDocuments}/{data.totalDocuments}
+              </p>
+            </section>
+          ) : (
+            <>
+              <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
+                <h2>Embeddable Badge</h2>
+                <p>Copy this badge link into your website or marketplace profile.</p>
+                <pre
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    padding: 12,
+                    border: "1px solid #ddd"
+                  }}
+                >
+                  {data.embedCode}
+                </pre>
+                <button type="button" onClick={copyEmbedCode} style={{ padding: 10 }}>
+                  Copy embed code
+                </button>
+              </section>
+
+              <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
+                <h2>Printable Certificate</h2>
+                <p>
+                  This certifies that <strong>{data.organizationName}</strong> has
+                  met TrustLayer verification requirements.
+                </p>
+                <p>Certificate ID: {data.approvedVerificationId}</p>
+                <p>Verification URL: {data.verificationUrl}</p>
+                <button type="button" onClick={() => window.print()} style={{ padding: 10 }}>
+                  Print certificate
+                </button>
+              </section>
+            </>
+          )}
+
+          <p style={{ marginTop: 24 }}>
+            <a href="/verification/requests">View verification requests</a>
+          </p>
+          <p>
+            <a href="/trust-score">View trust score</a>
+          </p>
+        </>
+      ) : null}
     </main>
   );
 }
