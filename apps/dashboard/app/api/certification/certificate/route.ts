@@ -40,6 +40,7 @@ function buildCertificatePdf(input: {
     "BT /F1 12 Tf 72 420 Td (This certificate confirms that the organization has met TrustLayer verification requirements.) Tj ET",
     "BT /F1 12 Tf 72 395 Td (Verification URL:) Tj ET",
     `BT /F1 10 Tf 72 375 Td (${escapePdfText(input.verificationUrl)}) Tj ET`,
+    "BT /F1 12 Tf 72 350 Td (QR Code: scan or visit the verification URL above.) Tj ET",
     "BT /F1 12 Tf 72 320 Td (Authorized by TrustLayer) Tj ET"
   ];
 
