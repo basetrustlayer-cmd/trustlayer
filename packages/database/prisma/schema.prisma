@@ -150,6 +150,24 @@ model VerificationRequest {
   updatedAt      DateTime           @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents    VerificationDocument[]
+}
+
+model VerificationDocument {
+  id                    String   @id @default(cuid())
+  verificationRequestId String
+  uploadedById          String?
+  filename              String
+  contentType           String
+  sizeBytes             Int
+  storageKey            String   @unique
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  verificationRequest VerificationRequest @relation(fields: [verificationRequestId], references: [id], onDelete: Cascade)
+
+  @@index([verificationRequestId])
+  @@index([uploadedById])
 }
 
 model Session {
