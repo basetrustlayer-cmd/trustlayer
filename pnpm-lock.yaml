@@ -62,6 +62,9 @@ importers:
       '@prisma/client':
         specifier: ^6.0.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@trustlayer/kyc-orchestrator':
+        specifier: workspace:*
+        version: link:../../services/kyc-orchestrator
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
