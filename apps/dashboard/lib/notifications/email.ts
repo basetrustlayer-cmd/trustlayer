@@ -18,7 +18,13 @@ function getEmailFrom() {
 }
 
 function getEmailProvider() {
-  return process.env.EMAIL_PROVIDER || "audit";
+  const provider = process.env.EMAIL_PROVIDER;
+
+  if (!provider) {
+    throw new Error("EMAIL_PROVIDER must be set to 'audit' or 'resend'.");
+  }
+
+  return provider;
 }
 
 async function deliverEmail(input: EmailInput) {
