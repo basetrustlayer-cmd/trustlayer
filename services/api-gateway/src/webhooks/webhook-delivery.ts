@@ -15,8 +15,22 @@ function computeBackoffMs(attempt: number): number {
   return Math.min(60_000, 2 ** attempt * 1000);
 }
 
+function getWebhookSigningSecret(): string {
+  const secret = process.env.WEBHOOK_SIGNING_SECRET;
+
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "WEBHOOK_SIGNING_SECRET must be set and at least 32 characters long before outbound webhook delivery is enabled."
+    );
+  }
+
+  return secret;
+}
+
 export class WebhookDeliveryService {
   async deliver(platformId: string, event: WebhookEvent): Promise<void> {
+    const signingSecret = getWebhookSigningSecret();
+
     const webhooks = await prisma.webhook.findMany({
       where: {
         platformId,
@@ -34,11 +48,7 @@ export class WebhookDeliveryService {
       }
 
       const payload = JSON.stringify(event);
-
-      // NOTE:
-      // secretHash currently stores a hashed secret in production designs.
-      // For this scaffold, it is used directly as the HMAC secret placeholder.
-      const signature = signPayload(webhook.secretHash, payload);
+      const signature = signPayload(signingSecret, payload);
 
       const delivery = await prisma.webhookDelivery.create({
         data: {
