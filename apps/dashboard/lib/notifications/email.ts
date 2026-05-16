@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { Resend } from "resend";
 import { createAuditLog } from "../audit/log";
 
 type EmailInput = {
@@ -12,10 +13,62 @@ type EmailInput = {
   metadata?: Prisma.InputJsonValue;
 };
 
+function getEmailFrom() {
+  return process.env.EMAIL_FROM || "TrustLayer <notifications@trustlayer.io>";
+}
+
+function getEmailProvider() {
+  return process.env.EMAIL_PROVIDER || "audit";
+}
+
+async function deliverEmail(input: EmailInput) {
+  const provider = getEmailProvider();
+
+  if (provider === "audit") {
+    return {
+      provider,
+      providerMessageId: null,
+      delivered: false
+    };
+  }
+
+  if (provider === "resend") {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY must be set when EMAIL_PROVIDER=resend.");
+    }
+
+    const resend = new Resend(apiKey);
+    const result = await resend.emails.send({
+      from: getEmailFrom(),
+      to: input.to,
+      subject: input.subject,
+      text: input.body
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return {
+      provider,
+      providerMessageId: result.data?.id ?? null,
+      delivered: true
+    };
+  }
+
+  throw new Error(`Unsupported EMAIL_PROVIDER: ${provider}`);
+}
+
 export async function sendNotificationEmail(input: EmailInput) {
+  const delivery = await deliverEmail(input);
+
   const metadata: Prisma.InputJsonValue = {
     channel: "email",
-    status: "queued",
+    status: delivery.delivered ? "sent" : "queued",
+    provider: delivery.provider,
+    providerMessageId: delivery.providerMessageId,
     to: input.to,
     subject: input.subject,
     body: input.body,
@@ -27,10 +80,10 @@ export async function sendNotificationEmail(input: EmailInput) {
   return createAuditLog({
     organizationId: input.organizationId,
     userId: input.userId ?? null,
-    action: "notification.email.queued",
+    action: delivery.delivered ? "notification.email.sent" : "notification.email.queued",
     entityType: input.entityType,
     entityId: input.entityId ?? null,
-    notes: `Email queued to ${input.to}: ${input.subject}`,
+    notes: `Email ${delivery.delivered ? "sent" : "queued"} to ${input.to}: ${input.subject}`,
     metadata
   });
 }
