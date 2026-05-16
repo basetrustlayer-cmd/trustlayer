@@ -3,6 +3,7 @@ import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { NextResponse } from "next/server";
 import {
   IdentityVerificationStatus,
+  Prisma,
   SubjectType,
   VerificationMethod
 } from "@prisma/client";
@@ -155,6 +156,20 @@ export async function POST(request: Request) {
   const registryMatched = verificationResult.verified;
   const tierAfter = tierForRegistryMatch(registryMatched);
 
+  const registryResponse = {
+    registry: data.registry,
+    country: normalizedCountry,
+    businessName: data.businessName,
+    registrationNumber: data.registrationNumber,
+    matched: registryMatched,
+    provider: verificationResult.provider,
+    reference: verificationResult.reference,
+    raw:
+      verificationResult.raw === undefined
+        ? null
+        : (verificationResult.raw as Prisma.InputJsonValue)
+  } satisfies Prisma.InputJsonObject;
+
   const session = await prisma.verificationSession.create({
     data: {
       subjectId: subject.id,
@@ -165,16 +180,7 @@ export async function POST(request: Request) {
       tierBefore: subject.verificationTier,
       tierAfter,
       completedAt: new Date(),
-      registryResponse: {
-        registry: data.registry,
-        country: normalizedCountry,
-        businessName: data.businessName,
-        registrationNumber: data.registrationNumber,
-        matched: registryMatched,
-        provider: verificationResult.provider,
-        reference: verificationResult.reference,
-        raw: verificationResult.raw
-      }
+      registryResponse
     }
   });
 
