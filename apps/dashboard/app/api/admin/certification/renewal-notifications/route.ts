@@ -1,3 +1,13 @@
+function getPublicAppUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be set.");
+  }
+
+  return url.replace(/\/$/, "");
+}
+
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
@@ -142,7 +152,7 @@ async function runRenewalNotificationScan(userId: string | null) {
     });
 
     const recipient = platform.contactEmail || platform.user.email;
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+    const verificationUrl = `${getPublicAppUrl()}/verify/${platform.slug}`;
     const renewalEmail = buildRenewalEmail({
       organizationName: request.organization.name,
       verificationUrl,

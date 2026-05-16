@@ -1,3 +1,13 @@
+function getPublicAppUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be set.");
+  }
+
+  return url.replace(/\/$/, "");
+}
+
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
@@ -144,7 +154,7 @@ export async function GET() {
   const issuedAt = lifecycle.issuedAt;
   const expiresAt = lifecycle.expiresAt;
   const certificateId = getCertificateId(approvedVerification.id, issuedAt);
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+  const verificationUrl = `${getPublicAppUrl()}/verify/${platform.slug}`;
 
   const pdf = buildCertificatePdf({
     certificateId,

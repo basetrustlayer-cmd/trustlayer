@@ -1,3 +1,13 @@
+function getPublicAppUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be set.");
+  }
+
+  return url.replace(/\/$/, "");
+}
+
 import QRCode from "qrcode";
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
@@ -31,7 +41,7 @@ export async function GET() {
   }
 
   const verificationUrl =
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+    `${getPublicAppUrl()}/verify/${platform.slug}`;
 
   const svg = await QRCode.toString(verificationUrl, {
     type: "svg",
