@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { NextResponse } from "next/server";
 import {
   IdentityVerificationStatus,
@@ -124,7 +125,34 @@ export async function POST(request: Request) {
     });
   }
 
-  const registryMatched = data.registry === "MOCK";
+  const orchestrator = createDefaultKycOrchestrator();
+
+  const verificationResult =
+    data.registry === "GHANA_ORC"
+      ? await orchestrator.verify({
+          subjectId: subject.id,
+          subjectType: "BUSINESS",
+          method: "BUSINESS_ORC",
+          country: normalizedCountry,
+          businessRegistrationNumber: data.registrationNumber
+        })
+      : {
+          provider: "MOCK" as const,
+          status: "VERIFIED" as const,
+          verified: true,
+          confidence: 0.75,
+          reference: `mock_business_${subject.id}`,
+          raw: {
+            registry: data.registry,
+            country: normalizedCountry,
+            businessName: data.businessName,
+            registrationNumber: data.registrationNumber,
+            matched: true,
+            mode: "mock"
+          }
+        };
+
+  const registryMatched = verificationResult.verified;
   const tierAfter = tierForRegistryMatch(registryMatched);
 
   const session = await prisma.verificationSession.create({
@@ -143,7 +171,9 @@ export async function POST(request: Request) {
         businessName: data.businessName,
         registrationNumber: data.registrationNumber,
         matched: registryMatched,
-        mode: "stub"
+        provider: verificationResult.provider,
+        reference: verificationResult.reference,
+        raw: verificationResult.raw
       }
     }
   });
@@ -158,7 +188,7 @@ export async function POST(request: Request) {
 
   const scoreValue = registryMatched ? 70 : 20;
   const tierCeiling = registryMatched ? 85 : 30;
-  const confidence = registryMatched ? 0.75 : 0.25;
+  const confidence = registryMatched ? verificationResult.confidence : 0.25;
 
   const trustScore = await prisma.trustScore.upsert({
     where: {
@@ -217,7 +247,7 @@ export async function POST(request: Request) {
       subject: updatedSubject,
       verificationSession: session,
       trustScore,
-      source: "business_verification_stub"
+      source: "business_verification_provider"
     },
     { status: 201 }
   );

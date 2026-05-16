@@ -6,6 +6,7 @@ import type {
 import { MockKycProvider } from "./providers/mock-provider.js";
 import { KycProviderRouter } from "./providers/routing/provider-router.js";
 import { GhanaCardProvider } from "./providers/adapters/ghana-card-provider.js";
+import { GhanaBusinessRegistryProvider } from "./providers/adapters/ghana-business-registry-provider.js";
 import { PaystackIdentityProvider } from "./providers/adapters/paystack-identity-provider.js";
 import { FlutterwaveVerifyProvider } from "./providers/adapters/flutterwave-verify-provider.js";
 import { StripeIdentityProvider } from "./providers/adapters/stripe-identity-provider.js";
@@ -14,6 +15,7 @@ export * from "./types/index.js";
 export * from "./errors/provider-error.js";
 export { MockKycProvider };
 export { GhanaCardProvider };
+export { GhanaBusinessRegistryProvider };
 export { PaystackIdentityProvider };
 export { FlutterwaveVerifyProvider };
 export { StripeIdentityProvider };
@@ -34,6 +36,7 @@ export class KycOrchestrator {
 
 export function createDefaultKycOrchestrator(): KycOrchestrator {
   return new KycOrchestrator([
+    new GhanaBusinessRegistryProvider(),
     new GhanaCardProvider(),
     new PaystackIdentityProvider(),
     new FlutterwaveVerifyProvider(),
