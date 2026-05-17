@@ -1,5 +1,6 @@
 import { prisma } from "@trustlayer/database";
 import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
+import { publishTrustLayerEvent } from "../events/event-publisher.js";
 
 export { calculateTrustScoreForPersistence } from "./scoring-calculator.js";
 export type { ScoreRole, TrustScoreCalculationInput, TrustScoreCalculationResult } from "./scoring-calculator.js";
@@ -130,6 +131,23 @@ export async function upsertTrustScore(
   });
 
   await prisma.scoreHistory.create({
+    data: {
+      trustScoreId: trustScore.id,
+      subjectId: result.subjectId,
+      role: result.role,
+      score: result.score,
+      tierCeiling: result.tierCeiling,
+      confidence: result.confidence,
+      factors: result.factors,
+      reason: input.reason ?? "score.updated"
+    }
+  });
+
+  await publishTrustLayerEvent("trustlayer.trust_scores", {
+    id: trustScore.id,
+    eventName: "trust_score.updated",
+    subjectIds: [result.subjectId],
+    occurredAt: new Date().toISOString(),
     data: {
       trustScoreId: trustScore.id,
       subjectId: result.subjectId,
