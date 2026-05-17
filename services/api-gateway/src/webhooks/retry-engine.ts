@@ -10,14 +10,19 @@ function isRetryEnabled(): boolean {
   return process.env.WEBHOOK_RETRY_ENABLED === "true";
 }
 
+function nextAttemptCount(attemptCount: number): number {
+  return attemptCount + 1;
+}
+
+function exhaustedAttempts(attemptCount: number): boolean {
+  return attemptCount >= MAX_ATTEMPTS;
+}
+
 export async function processWebhookRetries(): Promise<void> {
   const pending = await prisma.webhookDelivery.findMany({
     where: {
       status: {
         in: ["FAILED", "PENDING"]
-      },
-      attemptCount: {
-        lt: MAX_ATTEMPTS
       }
     },
     include: {
@@ -32,13 +37,27 @@ export async function processWebhookRetries(): Promise<void> {
   const service = new WebhookDeliveryService();
 
   for (const delivery of pending) {
+    if (exhaustedAttempts(delivery.attemptCount)) {
+      await prisma.webhookDelivery.update({
+        where: {
+          id: delivery.id
+        },
+        data: {
+          status: "DEAD_LETTER"
+        }
+      });
+      continue;
+    }
+
+    const attemptCount = nextAttemptCount(delivery.attemptCount);
+
     try {
       await service.deliver(delivery.webhook.platformId, {
         event: delivery.eventType,
         data: {
           retryOfDeliveryId: delivery.id,
           webhookId: delivery.webhookId,
-          attemptCount: delivery.attemptCount
+          attemptCount
         },
         createdAt: new Date().toISOString()
       });
@@ -48,12 +67,27 @@ export async function processWebhookRetries(): Promise<void> {
           id: delivery.id
         },
         data: {
-          attemptCount: delivery.attemptCount + 1
+          status: "DELIVERED",
+          attemptCount,
+          deliveredAt: new Date()
         }
       });
     } catch (error) {
+      const status = exhaustedAttempts(attemptCount) ? "DEAD_LETTER" : "FAILED";
+
+      await prisma.webhookDelivery.update({
+        where: {
+          id: delivery.id
+        },
+        data: {
+          status,
+          attemptCount
+        }
+      });
+
       console.warn("Webhook retry failed", {
         deliveryId: delivery.id,
+        status,
         error
       });
     }
