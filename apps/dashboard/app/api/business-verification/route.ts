@@ -198,7 +198,7 @@ export async function POST(request: Request) {
     }
   });
 
-  const score = await recalculateTrustScoreFromMarketplace(
+  await recalculateTrustScoreFromMarketplace(
     subject.id,
     "platform",
     registryMatched ? "business.verified" : "business.verification_failed"
