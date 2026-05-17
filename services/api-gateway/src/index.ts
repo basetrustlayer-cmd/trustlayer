@@ -12,6 +12,10 @@ import { registerEventMonitoringRoutes } from "./routes/events.js";
 import { registerFraudGraphRoutes } from "./routes/fraud-graph.js";
 import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
 import { registerFraudAlertRoutes } from "./routes/fraud-alerts.js";
+import { registerWalletRoutes } from "./routes/wallet.js";
+import { registerEscrowRoutes } from "./routes/escrow.js";
+import { registerDisputeResolutionRoutes } from "./routes/dispute-resolution.js";
+import { registerNotificationRoutes } from "./routes/notifications.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
@@ -42,6 +46,10 @@ await registerLeaderboardRoutes(app);
 await registerEventMonitoringRoutes(app);
 await registerFraudGraphRoutes(app);
 await registerFraudAlertRoutes(app);
+await registerWalletRoutes(app);
+await registerEscrowRoutes(app);
+await registerDisputeResolutionRoutes(app);
+await registerNotificationRoutes(app);
 
 const TIER_CEILINGS = {
   UNVERIFIED: 30,

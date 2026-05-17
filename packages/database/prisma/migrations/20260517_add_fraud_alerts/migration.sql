@@ -1,6 +1,20 @@
-CREATE TYPE IF NOT EXISTS "SubjectType" AS ENUM ('INDIVIDUAL', 'BUSINESS');
-CREATE TYPE IF NOT EXISTS "VerificationMethod" AS ENUM ('PHONE_OTP', 'GHANA_CARD', 'BVN', 'NIN', 'BUSINESS_ORC');
-CREATE TYPE IF NOT EXISTS "IdentityVerificationStatus" AS ENUM ('OTP_SENT', 'VERIFIED', 'FAILED', 'EXPIRED');
+DO $$ BEGIN
+    CREATE TYPE "SubjectType" AS ENUM ('INDIVIDUAL', 'BUSINESS');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "VerificationMethod" AS ENUM ('PHONE_OTP', 'GHANA_CARD', 'BVN', 'NIN', 'BUSINESS_ORC');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "IdentityVerificationStatus" AS ENUM ('OTP_SENT', 'VERIFIED', 'FAILED', 'EXPIRED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "Subject" (
     "id" TEXT NOT NULL,
