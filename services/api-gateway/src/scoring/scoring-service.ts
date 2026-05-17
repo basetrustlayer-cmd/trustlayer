@@ -1,6 +1,7 @@
 import { prisma } from "@trustlayer/database";
 import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
 import { publishTrustLayerEvent } from "../events/event-publisher.js";
+import { createHighRiskTrustScoreAlert } from "../fraud-alerts/fraud-alert-service.js";
 
 export { calculateTrustScoreForPersistence } from "./scoring-calculator.js";
 export type { ScoreRole, TrustScoreCalculationInput, TrustScoreCalculationResult } from "./scoring-calculator.js";
@@ -141,6 +142,13 @@ export async function upsertTrustScore(
       factors: result.factors,
       reason: input.reason ?? "score.updated"
     }
+  });
+
+  await createHighRiskTrustScoreAlert({
+    subjectId: result.subjectId,
+    score: result.score,
+    role: result.role,
+    reason: input.reason
   });
 
   await publishTrustLayerEvent("trustlayer.trust_scores", {
