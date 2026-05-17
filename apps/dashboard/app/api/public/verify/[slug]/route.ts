@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
-import { getCertificateId, getCredentialLifecycle } from "../../../../../lib/certification/lifecycle";
+import { getCredentialLifecycle } from "../../../../../lib/certification/lifecycle";
 
 function getScoreBand(score: number) {
   if (score >= 85) return "high_trust";
@@ -10,25 +10,37 @@ function getScoreBand(score: number) {
   return "unscored";
 }
 
+function getCertificateId(verificationId: string | null, issuedAt: Date | null) {
+  if (!verificationId || !issuedAt) return null;
+  return `TL-${issuedAt.getFullYear()}-${verificationId.slice(-8).toUpperCase()}`;
+}
+
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: { slug: string } }
 ) {
-  const { slug } = await params;
-
   const platform = await prisma.platform.findUnique({
-    where: { slug },
+    where: {
+      slug: params.slug
+    },
     include: {
       organization: true
     }
   });
 
   if (!platform?.organizationId || !platform.organization) {
-    return NextResponse.json({ error: "Verification profile not found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: "Verification profile not found"
+      },
+      { status: 404 }
+    );
   }
 
   const subject = await prisma.subject.findFirst({
-    where: { externalId: platform.userId }
+    where: {
+      externalId: platform.userId
+    }
   });
 
   const score = subject
@@ -62,6 +74,7 @@ export async function GET(
 
   const totalDocuments = approvedVerification?.documents.length ?? 0;
   const currentScore = score?.score ?? 0;
+
   const lifecycle = getCredentialLifecycle({
     hasApprovedVerification: Boolean(approvedVerification),
     approvedVerificationUpdatedAt: approvedVerification?.updatedAt ?? null,
@@ -74,20 +87,20 @@ export async function GET(
     organizationName: platform.organization.name,
     platformName: platform.name,
     platformSlug: platform.slug,
+    website: platform.website,
     score: currentScore,
     band: getScoreBand(currentScore),
     confidence: score?.confidence ?? 0.1,
     verificationTier: subject?.verificationTier ?? "UNVERIFIED",
-    certificateId:
-      approvedVerification && lifecycle.issuedAt
-        ? getCertificateId(approvedVerification.id, lifecycle.issuedAt)
-        : null,
+    certificateId: getCertificateId(
+      approvedVerification?.id ?? null,
+      lifecycle.issuedAt
+    ),
     approvedVerificationId: approvedVerification?.id ?? null,
     approvedDocuments,
     totalDocuments,
     issuedAt: lifecycle.issuedAt?.toISOString() ?? null,
     expiresAt: lifecycle.expiresAt?.toISOString() ?? null,
-    renewalDueAt: lifecycle.renewalDueAt?.toISOString() ?? null,
-    daysUntilExpiration: lifecycle.daysUntilExpiration
+    renewalDueAt: lifecycle.renewalDueAt?.toISOString() ?? null
   });
 }
