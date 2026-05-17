@@ -10,6 +10,7 @@ import { registerScoreHistoryRoutes } from "./routes/score-history.js";
 import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { registerEventMonitoringRoutes } from "./routes/events.js";
 import { registerFraudGraphRoutes } from "./routes/fraud-graph.js";
+import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
 import { registerFraudAlertRoutes } from "./routes/fraud-alerts.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
@@ -201,6 +202,44 @@ app.post("/v1/verify", async (request, reply) => {
     verificationTier = normalizeStoredTier(updatedSubject.verificationTier);
   }
 
+  if (process.env.FRAUD_GRAPH_ENABLED === "true") {
+    const fraudGraph = createFraudGraphServiceFromEnv();
+
+    try {
+      const phoneHash = hashPii(data.phone);
+      const nationalIdHash = hashPii(data.nationalId);
+      const businessRegistrationNumberHash = hashPii(
+        data.businessRegistrationNumber
+      );
+
+      if (phoneHash) {
+        await fraudGraph.upsertSubjectIdentifier({
+          subjectId: subject.id,
+          identifierType: "phone",
+          identifierHash: phoneHash
+        });
+      }
+
+      if (nationalIdHash) {
+        await fraudGraph.upsertSubjectIdentifier({
+          subjectId: subject.id,
+          identifierType: "national_id",
+          identifierHash: nationalIdHash
+        });
+      }
+
+      if (businessRegistrationNumberHash) {
+        await fraudGraph.upsertSubjectIdentifier({
+          subjectId: subject.id,
+          identifierType: "business_registration",
+          identifierHash: businessRegistrationNumberHash
+        });
+      }
+    } finally {
+      await fraudGraph.close();
+    }
+  }
+
   const score = await upsertTrustScore({
     subjectId: subject.id,
     role: "platform",
@@ -324,16 +363,22 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
     scores.reduce((sum, item) => sum + item.score, 0) / scores.length
   );
 
+  const scoresByRole = Object.fromEntries(
+    scores.map((score) => [
+      score.role,
+      {
+        score: score.score,
+        tierCeiling: score.tierCeiling,
+        confidence: score.confidence,
+        updatedAt: score.updatedAt.toISOString()
+      }
+    ])
+  );
+
   return reply.status(200).send({
     subjectId: params.subjectId,
     composite,
-    roles: scores.map((score) => ({
-      role: score.role,
-      score: score.score,
-      tierCeiling: score.tierCeiling,
-      confidence: score.confidence,
-      updatedAt: score.updatedAt.toISOString()
-    }))
+    scores: scoresByRole
   });
 });
 
