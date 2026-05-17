@@ -1,3 +1,45 @@
+CREATE TYPE IF NOT EXISTS "SubjectType" AS ENUM ('INDIVIDUAL', 'BUSINESS');
+CREATE TYPE IF NOT EXISTS "VerificationMethod" AS ENUM ('PHONE_OTP', 'GHANA_CARD', 'BVN', 'NIN', 'BUSINESS_ORC');
+CREATE TYPE IF NOT EXISTS "IdentityVerificationStatus" AS ENUM ('OTP_SENT', 'VERIFIED', 'FAILED', 'EXPIRED');
+
+CREATE TABLE IF NOT EXISTS "Subject" (
+    "id" TEXT NOT NULL,
+    "type" "SubjectType" NOT NULL,
+    "externalId" TEXT NOT NULL,
+    "country" TEXT NOT NULL DEFAULT 'GH',
+    "verificationTier" TEXT NOT NULL DEFAULT 'UNVERIFIED',
+    "tierUpdatedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Subject_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "Subject_externalId_idx" ON "Subject"("externalId");
+
+CREATE TABLE IF NOT EXISTS "VerificationSession" (
+    "id" TEXT NOT NULL,
+    "subjectId" TEXT NOT NULL,
+    "method" "VerificationMethod" NOT NULL,
+    "status" "IdentityVerificationStatus" NOT NULL,
+    "registryResponse" JSONB,
+    "tierBefore" TEXT,
+    "tierAfter" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "VerificationSession_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX IF NOT EXISTS "VerificationSession_subjectId_createdAt_idx" ON "VerificationSession"("subjectId", "createdAt");
+
+ALTER TABLE "VerificationSession"
+ADD CONSTRAINT "VerificationSession_subjectId_fkey"
+FOREIGN KEY ("subjectId") REFERENCES "Subject"("id")
+ON DELETE CASCADE ON UPDATE CASCADE;
+
 CREATE TABLE "FraudAlert" (
     "id" TEXT NOT NULL,
     "subjectId" TEXT NOT NULL,
