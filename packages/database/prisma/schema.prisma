@@ -111,6 +111,7 @@ model Organization {
   subscription         Subscription?
   invoices             Invoice[]
   payments             Payment[]
+  walletAccounts       WalletAccount[]
 }
 
 model User {
@@ -325,10 +326,11 @@ model Subject {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
-  verifications VerificationSession[]
-  trustScores   TrustScore[]
-  fraudAlerts   FraudAlert[]
-  scoreHistory  ScoreHistory[]
+  verifications  VerificationSession[]
+  trustScores    TrustScore[]
+  fraudAlerts    FraudAlert[]
+  walletAccounts WalletAccount[]
+  scoreHistory   ScoreHistory[]
 
   @@index([externalId])
 }
@@ -536,4 +538,74 @@ model FraudAlert {
 
   @@index([subjectId, createdAt])
   @@index([status, severity])
+}
+
+model WalletAccount {
+  id             String   @id @default(cuid())
+  organizationId String?
+  subjectId      String?
+  currency       String   @default("GHS")
+  type           String   @default("AVAILABLE")
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subject      Subject?      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  entries      LedgerEntry[]
+
+  @@unique([organizationId, subjectId, currency, type])
+  @@index([organizationId])
+  @@index([subjectId])
+}
+
+model LedgerTransaction {
+  id          String   @id @default(cuid())
+  reference   String   @unique
+  type        String
+  status      String   @default("POSTED")
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries LedgerEntry[]
+
+  @@index([type, createdAt])
+  @@index([status, createdAt])
+}
+
+model LedgerEntry {
+  id                  String   @id @default(cuid())
+  ledgerTransactionId String
+  walletAccountId     String
+  direction           String
+  amountCents         Int
+  currency            String   @default("GHS")
+  createdAt           DateTime @default(now())
+
+  ledgerTransaction LedgerTransaction @relation(fields: [ledgerTransactionId], references: [id], onDelete: Cascade)
+  walletAccount     WalletAccount     @relation(fields: [walletAccountId], references: [id], onDelete: Cascade)
+
+  @@index([walletAccountId, createdAt])
+  @@index([ledgerTransactionId])
+}
+
+model EscrowHold {
+  id              String    @id @default(cuid())
+  buyerSubjectId  String
+  sellerSubjectId String
+  amountCents     Int
+  currency        String    @default("GHS")
+  status          String    @default("HELD")
+  reference       String    @unique
+  metadata        Json?
+  releasedAt      DateTime?
+  canceledAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([buyerSubjectId])
+  @@index([sellerSubjectId])
+  @@index([status, createdAt])
 }
