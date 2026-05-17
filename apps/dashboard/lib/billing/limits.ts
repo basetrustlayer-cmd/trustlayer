@@ -36,46 +36,6 @@ export async function getOrganizationSubscriptionLimits(organizationId: string) 
   };
 }
 
-export async function assertDocumentUploadAllowed(organizationId: string): Promise<BillingLimitResult> {
-  const limits = await getOrganizationSubscriptionLimits(organizationId);
-
-  if (!limits.subscription || !limits.plan) {
-    return {
-      allowed: false,
-      reason: "A paid subscription is required to upload compliance documents.",
-      current: 0,
-      limit: 0
-    };
-  }
-
-  if (limits.maxDocuments === null) {
-    return {
-      allowed: true,
-      current: 0,
-      limit: null
-    };
-  }
-
-  const current = await prisma.invoice.count({
-    where: { organizationId }
-  });
-
-  if (current >= limits.maxDocuments) {
-    return {
-      allowed: false,
-      reason: "Document upload limit reached for the current plan.",
-      current,
-      limit: limits.maxDocuments
-    };
-  }
-
-  return {
-    allowed: true,
-    current,
-    limit: limits.maxDocuments
-  };
-}
-
 export async function assertOrganizationCreationAllowed(
   ownerOrganizationId: string
 ): Promise<BillingLimitResult> {
