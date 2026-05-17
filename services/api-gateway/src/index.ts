@@ -21,6 +21,8 @@ import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { startTrustLayerEventConsumer } from "./events/event-consumer.js";
 import { startWebhookRetryEngine } from "./webhooks/retry-engine.js";
+import { registerObservabilityHooks } from "./observability/request-context.js";
+import { renderPrometheusMetrics } from "./observability/metrics.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -34,6 +36,8 @@ const kyc = createDefaultKycOrchestrator();
 await app.register(cors, {
   origin: true
 });
+
+registerObservabilityHooks(app);
 
 app.addHook("preHandler", apiKeyAuthHook);
 
@@ -117,6 +121,12 @@ app.get("/health", async () => {
     status: "ok",
     service: "trustlayer-api-gateway"
   };
+});
+
+app.get("/metrics", async (_request, reply) => {
+  return reply
+    .header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+    .send(renderPrometheusMetrics());
 });
 
 app.post("/v1/verify", async (request, reply) => {
