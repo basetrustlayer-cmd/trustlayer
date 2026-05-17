@@ -9,6 +9,7 @@ import { registerMarketplaceEventRoutes } from "./routes/marketplace-events.js";
 import { registerScoreHistoryRoutes } from "./routes/score-history.js";
 import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { registerEventMonitoringRoutes } from "./routes/events.js";
+import { registerFraudGraphRoutes } from "./routes/fraud-graph.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
@@ -37,6 +38,7 @@ await registerMarketplaceEventRoutes(app);
 await registerScoreHistoryRoutes(app);
 await registerLeaderboardRoutes(app);
 await registerEventMonitoringRoutes(app);
+await registerFraudGraphRoutes(app);
 
 const TIER_CEILINGS = {
   UNVERIFIED: 30,
