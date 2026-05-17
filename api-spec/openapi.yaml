@@ -22,6 +22,10 @@ tags:
   - name: Billing
   - name: Stripe
   - name: Webhooks
+  - name: Notifications
+  - name: Dispute Resolution
+  - name: Escrow
+  - name: Wallet
 
 security:
   - ApiKeyAuth: []
@@ -406,6 +410,199 @@ paths:
         '200':
           description: Webhook processed
 
+  /v1/wallet/accounts:
+    post:
+      tags: [Wallet]
+      summary: Create or reactivate wallet account
+      operationId: createWalletAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletAccountRequest'
+      responses:
+        '201':
+          description: Wallet account created or reactivated
+
+  /v1/wallet/accounts/{id}/balance:
+    get:
+      tags: [Wallet]
+      summary: Get wallet balance
+      operationId: getWalletBalance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wallet balance response
+
+  /v1/wallet/transactions:
+    post:
+      tags: [Wallet]
+      summary: Post balanced ledger transaction
+      operationId: postLedgerTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerTransactionRequest'
+      responses:
+        '201':
+          description: Ledger transaction posted
+        '400':
+          description: Invalid or unbalanced ledger transaction
+
+  /v1/escrow/holds:
+    post:
+      tags: [Escrow]
+      summary: Create escrow hold
+      operationId: createEscrowHold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEscrowHoldRequest'
+      responses:
+        '201':
+          description: Escrow hold created
+
+  /v1/escrow/{reference}/release:
+    post:
+      tags: [Escrow]
+      summary: Release escrow funds
+      operationId: releaseEscrow
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseEscrowRequest'
+      responses:
+        '200':
+          description: Escrow released
+
+  /v1/escrow/{reference}/cancel:
+    post:
+      tags: [Escrow]
+      summary: Cancel escrow and refund buyer
+      operationId: cancelEscrow
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelEscrowRequest'
+      responses:
+        '200':
+          description: Escrow canceled
+
+  /v1/dispute-resolution/disputes:
+    post:
+      tags: [Dispute Resolution]
+      summary: Open dispute resolution case
+      operationId: openDisputeResolutionCase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenDisputeResolutionRequest'
+      responses:
+        '201':
+          description: Dispute opened
+
+  /v1/dispute-resolution/disputes/{id}:
+    get:
+      tags: [Dispute Resolution]
+      summary: Get dispute resolution case
+      operationId: getDisputeResolutionCase
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dispute details
+        '404':
+          description: Dispute not found
+
+  /v1/dispute-resolution/disputes/{id}/evidence:
+    post:
+      tags: [Dispute Resolution]
+      summary: Add dispute evidence
+      operationId: addDisputeEvidence
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDisputeEvidenceRequest'
+      responses:
+        '200':
+          description: Evidence added
+
+  /v1/dispute-resolution/disputes/{id}/resolve:
+    post:
+      tags: [Dispute Resolution]
+      summary: Resolve dispute
+      operationId: resolveDispute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDisputeRequest'
+      responses:
+        '200':
+          description: Dispute resolved
+
+  /v1/notifications/send:
+    post:
+      tags: [Notifications]
+      summary: Send notification through configured channels
+      operationId: sendNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '202':
+          description: Notification accepted
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -670,3 +867,188 @@ components:
                 type: number
               factors:
                 $ref: '#/components/schemas/TrustScoreFactors'
+
+
+    WalletAccountType:
+      type: string
+      enum: [AVAILABLE, ESCROW, PLATFORM_FEES]
+
+    LedgerDirection:
+      type: string
+      enum: [DEBIT, CREDIT]
+
+    WalletAccountRequest:
+      type: object
+      properties:
+        organizationId:
+          type: string
+        subjectId:
+          type: string
+        currency:
+          type: string
+          default: GHS
+        type:
+          $ref: '#/components/schemas/WalletAccountType'
+
+    LedgerEntryRequest:
+      type: object
+      required: [walletAccountId, direction, amountCents, currency]
+      properties:
+        walletAccountId:
+          type: string
+        direction:
+          $ref: '#/components/schemas/LedgerDirection'
+        amountCents:
+          type: integer
+          minimum: 1
+        currency:
+          type: string
+
+    LedgerTransactionRequest:
+      type: object
+      required: [reference, type, entries]
+      properties:
+        reference:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+        entries:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/LedgerEntryRequest'
+
+    CreateEscrowHoldRequest:
+      type: object
+      required: [reference, buyerSubjectId, sellerSubjectId, amountCents]
+      properties:
+        reference:
+          type: string
+        buyerSubjectId:
+          type: string
+        sellerSubjectId:
+          type: string
+        amountCents:
+          type: integer
+          minimum: 1
+        currency:
+          type: string
+          default: GHS
+        metadata:
+          type: object
+
+    ReleaseEscrowRequest:
+      type: object
+      properties:
+        platformFeeCents:
+          type: integer
+          minimum: 0
+        description:
+          type: string
+
+    CancelEscrowRequest:
+      type: object
+      properties:
+        description:
+          type: string
+
+    OpenDisputeResolutionRequest:
+      type: object
+      required: [filerSubjectId, respondentSubjectId, filerRole, respondentRole, reason]
+      properties:
+        filerSubjectId:
+          type: string
+        respondentSubjectId:
+          type: string
+        filerRole:
+          type: string
+          enum: [BUYER, SELLER]
+        respondentRole:
+          type: string
+          enum: [BUYER, SELLER]
+        reason:
+          type: string
+        escrowReference:
+          type: string
+        metadata:
+          type: object
+
+    AddDisputeEvidenceRequest:
+      type: object
+      required: [submittedBySubjectId, evidenceType]
+      properties:
+        submittedBySubjectId:
+          type: string
+        evidenceType:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+        metadata:
+          type: object
+
+    ResolveDisputeRequest:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          enum: [RELEASE_TO_SELLER, REFUND_BUYER, NO_ESCROW_ACTION]
+        faultParty:
+          type: string
+          enum: [BUYER, SELLER, BOTH, NONE]
+        reason:
+          type: string
+        platformFeeCents:
+          type: integer
+          minimum: 0
+
+    NotificationChannel:
+      type: string
+      enum: [EVENT_BUS, WEBHOOK, EMAIL, IN_APP]
+
+    NotificationRequest:
+      type: object
+      required: [eventName, subjectIds, data]
+      properties:
+        eventName:
+          type: string
+          enum: [transaction.created, review.created, dispute.created, trust_score.updated]
+        subjectIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        data:
+          type: object
+        topic:
+          type: string
+        platformId:
+          type: string
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+        email:
+          type: object
+          properties:
+            to:
+              type: string
+              format: email
+            subject:
+              type: string
+            body:
+              type: string
+        inApp:
+          type: object
+          properties:
+            title:
+              type: string
+            body:
+              type: string
