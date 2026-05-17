@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { NextResponse } from "next/server";
 import {
@@ -29,6 +29,10 @@ function slugify(value: string) {
 
 function tierForRegistryMatch(matched: boolean) {
   return matched ? "BUSINESS_VERIFIED" : "UNVERIFIED";
+}
+
+function hashSensitiveIdentifier(value: string) {
+  return createHash("sha256").update(value.trim().toUpperCase()).digest("hex");
 }
 
 export async function POST(request: Request) {
@@ -105,7 +109,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const externalId = `business:${normalizedCountry}:${data.registrationNumber}`;
+  const registrationNumberHash = hashSensitiveIdentifier(data.registrationNumber);
+  const externalId = `business:${normalizedCountry}:${registrationNumberHash}`;
 
   let subject = await prisma.subject.findFirst({
     where: {
@@ -147,7 +152,7 @@ export async function POST(request: Request) {
             registry: data.registry,
             country: normalizedCountry,
             businessName: data.businessName,
-            registrationNumber: data.registrationNumber,
+            registrationNumberHash,
             matched: true,
             mode: "mock"
           }
@@ -160,7 +165,7 @@ export async function POST(request: Request) {
     registry: data.registry,
     country: normalizedCountry,
     businessName: data.businessName,
-    registrationNumber: data.registrationNumber,
+    registrationNumberHash,
     matched: registryMatched,
     provider: verificationResult.provider,
     reference: verificationResult.reference,
