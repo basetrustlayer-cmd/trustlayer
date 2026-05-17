@@ -37,7 +37,7 @@ export class GhanaBusinessRegistryProvider implements KycProviderAdapter {
         registry: "GHANA_ORC",
         mode: "mock",
         country: "GH",
-        registrationNumber: request.businessRegistrationNumber,
+        registrationNumberProvided: true,
         message:
           "Ghana ORC mock provider. Real ORC integration pending external registry access."
       }
