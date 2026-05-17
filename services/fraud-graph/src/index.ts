@@ -23,6 +23,40 @@ export type SharedIdentifierMatch = {
   subjectCount: number;
 };
 
+export type FraudGraphRiskAnalytics = {
+  subjectId: string;
+  sharedIdentifierCount: number;
+  connectedSubjectCount: number;
+  highestSharedIdentifierSubjectCount: number;
+  riskScore: number;
+  riskLevel: "low" | "medium" | "high";
+  sharedIdentifiers: SharedIdentifierMatch[];
+};
+
+function getRiskLevel(riskScore: number): FraudGraphRiskAnalytics["riskLevel"] {
+  if (riskScore >= 70) return "high";
+  if (riskScore >= 35) return "medium";
+  return "low";
+}
+
+function calculateGraphRiskScore(matches: SharedIdentifierMatch[]): number {
+  const sharedIdentifierCount = matches.length;
+  const connectedSubjectCount = new Set(
+    matches.flatMap((match) => match.subjectIds)
+  ).size;
+  const highestSharedIdentifierSubjectCount = Math.max(
+    0,
+    ...matches.map((match) => match.subjectCount)
+  );
+
+  return Math.min(
+    100,
+    sharedIdentifierCount * 20 +
+      connectedSubjectCount * 10 +
+      highestSharedIdentifierSubjectCount * 10
+  );
+}
+
 export class FraudGraphService {
   private readonly driver: Driver;
 
@@ -88,6 +122,28 @@ export class FraudGraphService {
     } finally {
       await session.close();
     }
+  }
+
+  async calculateRiskAnalytics(subjectId: string): Promise<FraudGraphRiskAnalytics> {
+    const sharedIdentifiers = await this.findSharedIdentifiers(subjectId);
+    const riskScore = calculateGraphRiskScore(sharedIdentifiers);
+    const connectedSubjectCount = new Set(
+      sharedIdentifiers.flatMap((match) => match.subjectIds)
+    ).size;
+    const highestSharedIdentifierSubjectCount = Math.max(
+      0,
+      ...sharedIdentifiers.map((match) => match.subjectCount)
+    );
+
+    return {
+      subjectId,
+      sharedIdentifierCount: sharedIdentifiers.length,
+      connectedSubjectCount,
+      highestSharedIdentifierSubjectCount,
+      riskScore,
+      riskLevel: getRiskLevel(riskScore),
+      sharedIdentifiers
+    };
   }
 }
 
