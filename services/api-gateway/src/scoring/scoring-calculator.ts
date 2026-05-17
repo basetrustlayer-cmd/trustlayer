@@ -27,6 +27,7 @@ export type TrustScoreCalculationInput = {
   negativeReviewCount?: number;
   disputeCount?: number;
   confirmedFraudFlag?: boolean;
+  confirmedFraudSeverity?: "low" | "high";
   verificationTier?: string | null;
   reason?: string;
 };
@@ -114,7 +115,12 @@ export function calculateTrustScoreForPersistence(
     disputes * 0.15 +
     roleSpecific * 0.1;
 
-  const fraudPenalty = input.confirmedFraudFlag ? 40 : 0;
+  const fraudPenalty =
+    input.confirmedFraudFlag
+      ? input.confirmedFraudSeverity === "high"
+        ? 50
+        : 25
+      : 0;
   const rawScore = Math.round(clamp(weightedScore - fraudPenalty));
   const score = Math.min(rawScore, tierCeiling);
 
