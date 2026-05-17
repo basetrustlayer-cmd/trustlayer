@@ -33,13 +33,13 @@ export type FraudGraphRiskAnalytics = {
   sharedIdentifiers: SharedIdentifierMatch[];
 };
 
-function getRiskLevel(riskScore: number): FraudGraphRiskAnalytics["riskLevel"] {
+export function getRiskLevel(riskScore: number): FraudGraphRiskAnalytics["riskLevel"] {
   if (riskScore >= 70) return "high";
   if (riskScore >= 35) return "medium";
   return "low";
 }
 
-function calculateGraphRiskScore(matches: SharedIdentifierMatch[]): number {
+export function calculateGraphRiskScore(matches: SharedIdentifierMatch[]): number {
   const sharedIdentifierCount = matches.length;
   const connectedSubjectCount = new Set(
     matches.flatMap((match) => match.subjectIds)
