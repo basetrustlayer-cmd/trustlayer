@@ -11,6 +11,7 @@ import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
+import { startTrustLayerEventConsumer } from "./events/event-consumer.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -331,6 +332,12 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
 
 const port = Number(process.env.PORT || 4000);
 const host = process.env.HOST || "0.0.0.0";
+
+if (process.env.EVENT_CONSUMER_ENABLED === "true") {
+  startTrustLayerEventConsumer().catch((error: unknown) => {
+    app.log.error({ error }, "TrustLayer event consumer failed to start");
+  });
+}
 
 try {
   await app.listen({ port, host });
