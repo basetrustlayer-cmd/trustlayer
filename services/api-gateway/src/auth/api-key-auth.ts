@@ -64,6 +64,10 @@ export function requiredScopeForRoute(method: string, path: string): string | nu
     return "tier:read";
   }
 
+  if (method === "GET" && path.startsWith("/v1/leaderboard")) {
+    return "leaderboard:read";
+  }
+
   if (method === "POST" && path === "/v1/verify") {
     return "verification:write";
   }
