@@ -16,7 +16,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@faker-js/faker": "5.5.3"
+      "@faker-js/faker": "5.5.3",
+      "postcss": "8.5.10"
     }
   },
   "devDependencies": {
