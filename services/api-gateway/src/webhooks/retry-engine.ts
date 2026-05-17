@@ -1,5 +1,5 @@
 import { prisma } from "@trustlayer/database";
-import { WebhookDeliveryService } from "../webhooks/webhook-delivery.js";
+import { WebhookDeliveryService } from "./webhook-delivery.js";
 
 const MAX_ATTEMPTS = Number(process.env.WEBHOOK_MAX_ATTEMPTS ?? "5");
 const RETRY_INTERVAL_MS = Number(
@@ -8,16 +8,6 @@ const RETRY_INTERVAL_MS = Number(
 
 function isRetryEnabled(): boolean {
   return process.env.WEBHOOK_RETRY_ENABLED === "true";
-}
-
-function shouldRetry(delivery: {
-  status: string;
-  attemptCount: number;
-}): boolean {
-  return (
-    delivery.status !== "DELIVERED" &&
-    delivery.attemptCount < MAX_ATTEMPTS
-  );
 }
 
 export async function processWebhookRetries(): Promise<void> {
@@ -30,20 +20,37 @@ export async function processWebhookRetries(): Promise<void> {
         lt: MAX_ATTEMPTS
       }
     },
+    include: {
+      webhook: true
+    },
     orderBy: {
       createdAt: "asc"
     },
     take: 100
   });
 
-  for (const delivery of pending) {
-    if (!shouldRetry(delivery)) {
-      continue;
-    }
+  const service = new WebhookDeliveryService();
 
+  for (const delivery of pending) {
     try {
-      const service = new WebhookDeliveryService();
-      await service.deliver(delivery.id);
+      await service.deliver(delivery.webhook.platformId, {
+        event: delivery.eventType,
+        data: {
+          retryOfDeliveryId: delivery.id,
+          webhookId: delivery.webhookId,
+          attemptCount: delivery.attemptCount
+        },
+        createdAt: new Date().toISOString()
+      });
+
+      await prisma.webhookDelivery.update({
+        where: {
+          id: delivery.id
+        },
+        data: {
+          attemptCount: delivery.attemptCount + 1
+        }
+      });
     } catch (error) {
       console.warn("Webhook retry failed", {
         deliveryId: delivery.id,
