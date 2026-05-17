@@ -3,7 +3,8 @@ import { Kafka, type Producer } from "kafkajs";
 export type TrustLayerEventName =
   | "transaction.created"
   | "review.created"
-  | "dispute.created";
+  | "dispute.created"
+  | "trust_score.updated";
 
 export type TrustLayerEventPayload = {
   id: string;
