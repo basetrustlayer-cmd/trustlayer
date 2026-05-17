@@ -1,3 +1,13 @@
+function getPublicAppUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be set.");
+  }
+
+  return url.replace(/\/$/, "");
+}
+
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
@@ -79,7 +89,7 @@ export async function GET() {
     score: currentScore
   });
 
-  const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/verify/${platform.slug}`;
+  const verificationUrl = `${getPublicAppUrl()}/verify/${platform.slug}`;
 
   return NextResponse.json({
     eligible: lifecycle.eligible,
