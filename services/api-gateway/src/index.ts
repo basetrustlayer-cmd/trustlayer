@@ -256,42 +256,76 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
 
   const query = z
     .object({
-      role: scoreRoleSchema.default("platform")
+      role: scoreRoleSchema.optional()
     })
     .parse(request.query);
 
-  const score = await prisma.trustScore.findUnique({
-    where: {
-      subjectId_role: {
+  if (query.role) {
+    const score = await prisma.trustScore.findUnique({
+      where: {
+        subjectId_role: {
+          subjectId: params.subjectId,
+          role: query.role
+        }
+      }
+    });
+
+    if (!score) {
+      return reply.status(404).send({
+        error: "TrustScore not found",
         subjectId: params.subjectId,
         role: query.role
-      }
+      });
     }
-  });
 
-  if (!score) {
-    return reply.status(404).send({
-      error: "TrustScore not found",
-      subjectId: params.subjectId,
-      role: query.role
+    return reply.status(200).send({
+      subjectId: score.subjectId,
+      role: score.role as ScoreRole,
+      score: score.score,
+      tierCeiling: score.tierCeiling,
+      confidence: score.confidence,
+      factors: {
+        identity: score.factorIdentity,
+        transactions: score.factorTransactions,
+        reviews: score.factorReviews,
+        disputes: score.factorDisputes,
+        roleSpecific: score.factorRoleSpecific
+      },
+      createdAt: score.createdAt.toISOString(),
+      updatedAt: score.updatedAt.toISOString()
     });
   }
 
-  return reply.status(200).send({
-    subjectId: score.subjectId,
-    role: score.role as ScoreRole,
-    score: score.score,
-    tierCeiling: score.tierCeiling,
-    confidence: score.confidence,
-    factors: {
-      identity: score.factorIdentity,
-      transactions: score.factorTransactions,
-      reviews: score.factorReviews,
-      disputes: score.factorDisputes,
-      roleSpecific: score.factorRoleSpecific
+  const scores = await prisma.trustScore.findMany({
+    where: {
+      subjectId: params.subjectId
     },
-    createdAt: score.createdAt.toISOString(),
-    updatedAt: score.updatedAt.toISOString()
+    orderBy: {
+      role: "asc"
+    }
+  });
+
+  if (scores.length === 0) {
+    return reply.status(404).send({
+      error: "TrustScore not found",
+      subjectId: params.subjectId
+    });
+  }
+
+  const composite = Math.round(
+    scores.reduce((sum, item) => sum + item.score, 0) / scores.length
+  );
+
+  return reply.status(200).send({
+    subjectId: params.subjectId,
+    composite,
+    roles: scores.map((score) => ({
+      role: score.role,
+      score: score.score,
+      tierCeiling: score.tierCeiling,
+      confidence: score.confidence,
+      updatedAt: score.updatedAt.toISOString()
+    }))
   });
 });
 
