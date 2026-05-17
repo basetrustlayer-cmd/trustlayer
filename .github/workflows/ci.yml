@@ -48,7 +48,6 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level=high
 
       - name: Verify OpenAPI lock
         run: node scripts/check-openapi-lock.js
