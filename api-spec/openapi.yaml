@@ -169,6 +169,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/DisputeResponse'
 
+  /v1/events:
+    get:
+      tags: [Marketplace Events]
+      summary: List event processing logs
+      operationId: listEvents
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Event log list
+
+  /v1/events/{eventId}:
+    get:
+      tags: [Marketplace Events]
+      summary: Get event processing log
+      operationId: getEvent
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event log details
+        '404':
+          description: Event not found
+
+  /v1/events/{eventId}/reprocess:
+    post:
+      tags: [Marketplace Events]
+      summary: Reprocess an event
+      operationId: reprocessEvent
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event reprocessed
+        '404':
+          description: Event not found
+
   /v1/leaderboard:
     get:
       tags: [Leaderboard]
