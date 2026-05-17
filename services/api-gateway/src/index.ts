@@ -13,6 +13,7 @@ import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { startTrustLayerEventConsumer } from "./events/event-consumer.js";
+import { startWebhookRetryEngine } from "./webhooks/retry-engine.js";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -340,6 +341,8 @@ if (process.env.EVENT_CONSUMER_ENABLED === "true") {
     app.log.error({ error }, "TrustLayer event consumer failed to start");
   });
 }
+
+startWebhookRetryEngine();
 
 try {
   await app.listen({ port, host });
