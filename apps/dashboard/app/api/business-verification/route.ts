@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "crypto";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
+import { recalculateTrustScoreFromMarketplace } from "../../../../../services/api-gateway/src/scoring/scoring-service";
 import { NextResponse } from "next/server";
 import {
   IdentityVerificationStatus,
@@ -28,7 +29,7 @@ function slugify(value: string) {
 }
 
 function tierForRegistryMatch(matched: boolean) {
-  return matched ? "BUSINESS_VERIFIED" : "UNVERIFIED";
+  return matched ? "BUSINESS" : "UNVERIFIED";
 }
 
 function hashSensitiveIdentifier(value: string) {
@@ -197,57 +198,18 @@ export async function POST(request: Request) {
     }
   });
 
-  const scoreValue = registryMatched ? 70 : 20;
-  const tierCeiling = registryMatched ? 85 : 30;
-  const confidence = registryMatched ? verificationResult.confidence : 0.25;
+  const score = await recalculateTrustScoreFromMarketplace(
+    subject.id,
+    "platform",
+    registryMatched ? "business.verified" : "business.verification_failed"
+  );
 
-  const trustScore = await prisma.trustScore.upsert({
+  const trustScore = await prisma.trustScore.findUniqueOrThrow({
     where: {
       subjectId_role: {
         subjectId: subject.id,
         role: "platform"
       }
-    },
-    update: {
-      score: scoreValue,
-      tierCeiling,
-      confidence,
-      factorIdentity: registryMatched ? 100 : 0,
-      factorTransactions: 0,
-      factorReviews: 0,
-      factorDisputes: 100,
-      factorRoleSpecific: registryMatched ? 75 : 10
-    },
-    create: {
-      subjectId: subject.id,
-      role: "platform",
-      score: scoreValue,
-      tierCeiling,
-      confidence,
-      factorIdentity: registryMatched ? 100 : 0,
-      factorTransactions: 0,
-      factorReviews: 0,
-      factorDisputes: 100,
-      factorRoleSpecific: registryMatched ? 75 : 10
-    }
-  });
-
-  await prisma.scoreHistory.create({
-    data: {
-      trustScoreId: trustScore.id,
-      subjectId: subject.id,
-      role: "platform",
-      score: scoreValue,
-      tierCeiling,
-      confidence,
-      factors: {
-        identity: registryMatched ? 100 : 0,
-        transactions: 0,
-        reviews: 0,
-        disputes: 100,
-        roleSpecific: registryMatched ? 75 : 10
-      },
-      reason: "Business registry verification completed"
     }
   });
 

@@ -10,6 +10,7 @@ import { registerScoreHistoryRoutes } from "./routes/score-history.js";
 import { registerLeaderboardRoutes } from "./routes/leaderboard.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
+import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import {
   prisma,
   IdentityVerificationStatus,
@@ -18,6 +19,7 @@ import {
 } from "@trustlayer/database";
 
 const app = Fastify({ logger: true });
+const kyc = createDefaultKycOrchestrator();
 
 await app.register(cors, {
   origin: true
@@ -47,7 +49,9 @@ const verifySchema = z.object({
   subjectId: z.string().min(1),
   method: z.nativeEnum(VerificationMethod),
   phone: z.string().optional(),
-  nationalId: z.string().optional()
+  nationalId: z.string().optional(),
+  businessRegistrationNumber: z.string().optional(),
+  country: z.string().min(2).max(2).default("GH")
 });
 
 function inferSubjectType(method: VerificationMethod): SubjectType {
@@ -112,10 +116,22 @@ app.post("/v1/verify", async (request, reply) => {
   const subjectType = inferSubjectType(data.method);
   const requestedTier = inferTier(data.method);
 
+  const kycResult = await kyc.verify({
+    subjectId: data.subjectId,
+    subjectType,
+    method: data.method,
+    country: data.country,
+    nationalId: data.nationalId,
+    phone: data.phone,
+    businessRegistrationNumber: data.businessRegistrationNumber
+  });
+
   const status =
-    data.method === "PHONE_OTP"
+    kycResult.status === "OTP_SENT"
       ? IdentityVerificationStatus.OTP_SENT
-      : IdentityVerificationStatus.VERIFIED;
+      : kycResult.verified
+        ? IdentityVerificationStatus.VERIFIED
+        : IdentityVerificationStatus.FAILED;
 
   const subject = await prisma.subject.upsert({
     where: {
@@ -125,7 +141,7 @@ app.post("/v1/verify", async (request, reply) => {
       id: data.subjectId,
       type: subjectType,
       externalId: data.subjectId,
-      country: "GH"
+      country: data.country
     },
     update: {
       type: subjectType
@@ -145,11 +161,14 @@ app.post("/v1/verify", async (request, reply) => {
       method: data.method,
       status,
       registryResponse: {
-        provider: "mock",
-        verified: status === IdentityVerificationStatus.VERIFIED,
+        provider: kycResult.provider,
+        verified: kycResult.verified,
+        confidence: kycResult.confidence,
+        reference: kycResult.reference,
         method: data.method,
         phoneHash: hashPii(data.phone),
-        nationalIdHash: hashPii(data.nationalId)
+        nationalIdHash: hashPii(data.nationalId),
+        businessRegistrationNumberHash: hashPii(data.businessRegistrationNumber)
       },
       tierBefore,
       tierAfter,

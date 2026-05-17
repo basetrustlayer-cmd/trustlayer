@@ -145,6 +145,9 @@ importers:
       '@trustlayer/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@trustlayer/kyc-orchestrator':
+        specifier: workspace:*
+        version: link:../kyc-orchestrator
       fastify:
         specifier: ^5.0.0
         version: 5.8.5
