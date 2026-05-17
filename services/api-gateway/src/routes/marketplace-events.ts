@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "@trustlayer/database";
+import { publishTrustLayerEvent } from "../events/event-publisher.js";
 import {
   recalculateTrustScoreFromMarketplace,
   type ScoreRole
@@ -84,6 +85,21 @@ export async function registerMarketplaceEventRoutes(
       }
     });
 
+    await publishTrustLayerEvent("trustlayer.marketplace.events", {
+      id: transaction.id,
+      eventName: "transaction.created",
+      subjectIds: [data.sellerSubjectId, data.buyerSubjectId],
+      occurredAt: transaction.createdAt.toISOString(),
+      data: {
+        transactionId: transaction.id,
+        sellerSubjectId: data.sellerSubjectId,
+        buyerSubjectId: data.buyerSubjectId,
+        amountCents: data.amountCents,
+        currency: data.currency,
+        status: data.status
+      }
+    });
+
     const sellerScore = await recalculateTrustScoreFromMarketplace(
       data.sellerSubjectId,
       toScoreRole(data.sellerRole),
@@ -129,6 +145,19 @@ export async function registerMarketplaceEventRoutes(
       }
     });
 
+    await publishTrustLayerEvent("trustlayer.marketplace.events", {
+      id: review.id,
+      eventName: "review.created",
+      subjectIds: [data.reviewerSubjectId, data.revieweeSubjectId],
+      occurredAt: review.createdAt.toISOString(),
+      data: {
+        reviewId: review.id,
+        reviewerSubjectId: data.reviewerSubjectId,
+        revieweeSubjectId: data.revieweeSubjectId,
+        rating: data.rating
+      }
+    });
+
     const revieweeScore = await recalculateTrustScoreFromMarketplace(
       data.revieweeSubjectId,
       toScoreRole(data.revieweeRole),
@@ -164,6 +193,20 @@ export async function registerMarketplaceEventRoutes(
         reason: data.reason ?? null,
         resolution: data.resolution ?? null,
         metadata: data.metadata ?? {}
+      }
+    });
+
+    await publishTrustLayerEvent("trustlayer.marketplace.events", {
+      id: dispute.id,
+      eventName: "dispute.created",
+      subjectIds: [data.filerSubjectId, data.respondentSubjectId],
+      occurredAt: dispute.createdAt.toISOString(),
+      data: {
+        disputeId: dispute.id,
+        filerSubjectId: data.filerSubjectId,
+        respondentSubjectId: data.respondentSubjectId,
+        status: data.status,
+        faultParty: data.faultParty ?? null
       }
     });
 
