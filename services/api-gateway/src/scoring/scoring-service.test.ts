@@ -54,7 +54,7 @@ describe("calculateTrustScoreForPersistence", () => {
     expect(result.tier).toBe("good_standing");
   });
 
-  it("applies fraud penalty", () => {
+  it("applies low-severity fraud penalty", () => {
     const clean = calculateTrustScoreForPersistence({
       subjectId: "subject_1",
       identityVerified: true,
@@ -73,10 +73,37 @@ describe("calculateTrustScoreForPersistence", () => {
       negativeReviewCount: 0,
       disputeCount: 0,
       confirmedFraudFlag: true,
+      confirmedFraudSeverity: "low",
       verificationTier: "ENHANCED"
     });
 
-    expect(clean.score - fraud.score).toBe(40);
+    expect(clean.score - fraud.score).toBe(25);
+  });
+
+  it("applies high-severity fraud penalty", () => {
+    const clean = calculateTrustScoreForPersistence({
+      subjectId: "subject_1",
+      identityVerified: true,
+      transactionCount: 10,
+      positiveReviewCount: 5,
+      negativeReviewCount: 0,
+      disputeCount: 0,
+      verificationTier: "ENHANCED"
+    });
+
+    const fraud = calculateTrustScoreForPersistence({
+      subjectId: "subject_1",
+      identityVerified: true,
+      transactionCount: 10,
+      positiveReviewCount: 5,
+      negativeReviewCount: 0,
+      disputeCount: 0,
+      confirmedFraudFlag: true,
+      confirmedFraudSeverity: "high",
+      verificationTier: "ENHANCED"
+    });
+
+    expect(clean.score - fraud.score).toBe(50);
   });
 
   it("calculates confidence from evidence depth", () => {
