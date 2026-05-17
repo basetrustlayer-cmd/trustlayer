@@ -1,4 +1,5 @@
 import { prisma } from "@trustlayer/database";
+import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
 
 export { calculateTrustScoreForPersistence } from "./scoring-calculator.js";
 export type { ScoreRole, TrustScoreCalculationInput, TrustScoreCalculationResult } from "./scoring-calculator.js";
@@ -20,6 +21,31 @@ async function getSubjectVerificationFacts(subjectId: string) {
     verificationCount,
     identityVerified
   };
+}
+
+async function getGraphRiskFacts(subjectId: string): Promise<Pick<TrustScoreCalculationInput, "confirmedFraudFlag" | "confirmedFraudSeverity">> {
+  if (process.env.FRAUD_GRAPH_ENABLED !== "true") {
+    return {};
+  }
+
+  const fraudGraph = createFraudGraphServiceFromEnv();
+
+  try {
+    const analytics = await fraudGraph.calculateRiskAnalytics(subjectId);
+
+    if (analytics.riskLevel === "high") {
+      return {
+        confirmedFraudFlag: true,
+        confirmedFraudSeverity: "high"
+      };
+    }
+
+    return {};
+  } catch {
+    return {};
+  } finally {
+    await fraudGraph.close();
+  }
 }
 
 async function getMarketplaceFacts(subjectId: string, role: ScoreRole) {
@@ -126,12 +152,14 @@ export async function recalculateTrustScoreFromMarketplace(
 ): Promise<TrustScoreCalculationResult> {
   const verificationFacts = await getSubjectVerificationFacts(subjectId);
   const marketplaceFacts = await getMarketplaceFacts(subjectId, role);
+  const graphRiskFacts = await getGraphRiskFacts(subjectId);
 
   return upsertTrustScore({
     subjectId,
     role,
     ...verificationFacts,
     ...marketplaceFacts,
+    ...graphRiskFacts,
     reason
   });
 }

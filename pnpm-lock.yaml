@@ -146,6 +146,9 @@ importers:
       '@trustlayer/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@trustlayer/fraud-graph':
+        specifier: workspace:*
+        version: link:../fraud-graph
       '@trustlayer/kyc-orchestrator':
         specifier: workspace:*
         version: link:../kyc-orchestrator
