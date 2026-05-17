@@ -24,6 +24,7 @@ type BadgeData = {
   renewalDueAt: string | null;
   daysUntilExpiration: number | null;
   verificationUrl: string;
+  badgeImageUrl: string;
   embedCode: string;
 };
 
@@ -134,7 +135,17 @@ export default function CertificationBadgePage() {
             <>
               <section style={{ marginTop: 24, padding: 20, border: "1px solid #ddd" }}>
                 <h2>Embeddable Badge</h2>
-                <p>Copy this badge link into your website or marketplace profile.</p>
+                <p>Copy this badge image embed code into your website or marketplace profile.</p>
+                <img
+                  src={data.badgeImageUrl}
+                  alt={`TrustLayer verification badge for ${data.organizationName}`}
+                  style={{
+                    maxWidth: 420,
+                    width: "100%",
+                    height: "auto",
+                    border: "1px solid #ddd"
+                  }}
+                />
                 <pre
                   style={{
                     whiteSpace: "pre-wrap",

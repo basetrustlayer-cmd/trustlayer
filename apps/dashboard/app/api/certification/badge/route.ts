@@ -89,7 +89,10 @@ export async function GET() {
     score: currentScore
   });
 
-  const verificationUrl = `${getPublicAppUrl()}/verify/${platform.slug}`;
+  const publicAppUrl = getPublicAppUrl();
+  const verificationUrl = `${publicAppUrl}/verify/${platform.slug}`;
+  const badgeImageUrl = `${publicAppUrl}/api/public/badge/${platform.slug}`;
+  const embedCode = `<a href="${verificationUrl}" target="_blank" rel="noreferrer"><img src="${badgeImageUrl}" alt="TrustLayer verification badge for ${platform.organization.name}" width="420" height="120" /></a>`;
 
   return NextResponse.json({
     eligible: lifecycle.eligible,
@@ -112,6 +115,7 @@ export async function GET() {
     renewalDueAt: lifecycle.renewalDueAt?.toISOString() ?? null,
     daysUntilExpiration: lifecycle.daysUntilExpiration,
     verificationUrl,
-    embedCode: `<a href="${verificationUrl}" target="_blank" rel="noreferrer">TrustLayer Verified</a>`
+    badgeImageUrl,
+    embedCode
   });
 }
