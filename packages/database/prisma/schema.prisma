@@ -136,7 +136,7 @@ model Membership {
   createdAt      DateTime       @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
 }
@@ -149,24 +149,24 @@ model VerificationRequest {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   documents    VerificationDocument[]
 }
 
 model VerificationDocument {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   verificationRequestId String
   uploadedById          String?
   filename              String
   contentType           String
   sizeBytes             Int
-  storageKey            String   @unique
-  reviewStatus          String   @default("PENDING")
+  storageKey            String    @unique
+  reviewStatus          String    @default("PENDING")
   reviewNotes           String?
   reviewedById          String?
   reviewedAt            DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   verificationRequest VerificationRequest @relation(fields: [verificationRequestId], references: [id], onDelete: Cascade)
 
@@ -301,29 +301,29 @@ model Platform {
   slug           String            @unique
   description    String?
   website        String?
-  contactEmail String?
+  contactEmail   String?
   environment    ApiKeyEnvironment @default(TEST)
   planTier       PlanTier          @default(SANDBOX)
-  apiScopes     Json?
+  apiScopes      Json?
   isActive       Boolean           @default(true)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  apiKeys       ApiKey[]
-  webhooks      Webhook[]
+  apiKeys      ApiKey[]
+  webhooks     Webhook[]
 }
 
 model Subject {
-  id          String      @id
-  type        SubjectType
-  externalId  String
-  country     String      @default("GH")
-  verificationTier String   @default("UNVERIFIED")
-  tierUpdatedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id               String      @id
+  type             SubjectType
+  externalId       String
+  country          String      @default("GH")
+  verificationTier String      @default("UNVERIFIED")
+  tierUpdatedAt    DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   verifications VerificationSession[]
   trustScores   TrustScore[]
@@ -350,7 +350,6 @@ model VerificationSession {
   @@index([subjectId, createdAt])
 }
 
-
 model ApiKey {
   id          String            @id @default(cuid())
   platformId  String
@@ -371,16 +370,15 @@ model ApiKey {
   @@index([revokedAt])
 }
 
-
 model Webhook {
-  id          String   @id @default(cuid())
-  platformId  String
-  url         String
-  events      Json
-  secretHash  String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  platformId String
+  url        String
+  events     Json
+  secretHash String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   platform   Platform          @relation(fields: [platformId], references: [id], onDelete: Cascade)
   deliveries WebhookDelivery[]
@@ -390,15 +388,15 @@ model Webhook {
 }
 
 model WebhookDelivery {
-  id            String    @id @default(cuid())
-  webhookId     String
-  eventType     String
-  status        String
-  responseCode  Int?
-  attemptCount  Int       @default(0)
-  deliveredAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  webhookId    String
+  eventType    String
+  status       String
+  responseCode Int?
+  attemptCount Int       @default(0)
+  deliveredAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
@@ -406,7 +404,6 @@ model WebhookDelivery {
   @@index([eventType])
   @@index([status])
 }
-
 
 model TrustScore {
   id                 String   @id @default(cuid())
@@ -423,7 +420,7 @@ model TrustScore {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   history ScoreHistory[]
 
   @@unique([subjectId, role])
@@ -447,7 +444,6 @@ model ScoreHistory {
 
   @@index([subjectId, role, createdAt])
 }
-
 
 model Transaction {
   id              String   @id @default(cuid())
@@ -505,4 +501,20 @@ model Dispute {
   @@index([status])
   @@index([faultParty])
   @@index([createdAt])
+}
+
+model EventLog {
+  id           String    @id @default(cuid())
+  eventId      String    @unique
+  topic        String
+  eventName    String
+  payload      Json
+  status       String    @default("RECEIVED")
+  processedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([topic, createdAt])
+  @@index([status, createdAt])
 }
