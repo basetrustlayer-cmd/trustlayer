@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
+import { createFraudAlert } from "../fraud-alerts/fraud-alert-service.js";
 
 const fraudGraphParamsSchema = z.object({
   subjectId: z.string().min(1)
@@ -21,6 +22,23 @@ export async function registerFraudGraphRoutes(
 
     try {
       const analytics = await fraudGraph.calculateRiskAnalytics(params.subjectId);
+
+      if (analytics.riskLevel === "high") {
+        await createFraudAlert({
+          subjectId: params.subjectId,
+          severity: "HIGH",
+          reason: `Fraud graph risk: ${analytics.riskScore}/100 (${analytics.connectedSubjectCount} connected subjects)`,
+          source: "fraud_graph",
+          metadata: {
+            riskScore: analytics.riskScore,
+            riskLevel: analytics.riskLevel,
+            sharedIdentifierCount: analytics.sharedIdentifierCount,
+            connectedSubjectCount: analytics.connectedSubjectCount,
+            highestSharedIdentifierSubjectCount:
+              analytics.highestSharedIdentifierSubjectCount
+          }
+        });
+      }
 
       return reply.status(200).send(analytics);
     } finally {
