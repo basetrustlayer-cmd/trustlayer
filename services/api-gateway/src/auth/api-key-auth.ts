@@ -143,4 +143,26 @@ export async function apiKeyAuthHook(
     platformId: apiKey.platformId,
     scopes
   };
+
+  if (apiKey.platform.organizationId) {
+    prisma.auditLog
+      .create({
+        data: {
+          organizationId: apiKey.platform.organizationId,
+          action: `${request.method} ${routePath}`,
+          entityType: "api_request",
+          entityId: apiKey.platformId,
+          metadata: {
+            apiKeyId: apiKey.id,
+            platformId: apiKey.platformId,
+            ip: request.ip,
+            scopes,
+            path: routePath
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        request.log.warn({ error }, "Failed to write API audit log");
+      });
+  }
 }
