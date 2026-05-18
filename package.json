@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "openapi:lock": "node scripts/check-openapi-lock.js",
     "test:coverage": "vitest run --coverage",
-    "test:contract": "dredd"
+    "test:contract": "dredd --config ./dredd.yml"
   },
   "pnpm": {
     "overrides": {
