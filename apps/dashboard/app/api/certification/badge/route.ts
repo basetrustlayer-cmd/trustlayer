@@ -84,7 +84,7 @@ export async function GET() {
   const totalDocuments = approvedVerification?.documents.length ?? 0;
   const currentScore = score?.score ?? 0;
   const lifecycle = getCredentialLifecycle({
-    hasApprovedVerification: Boolean(approvedVerification),
+    verificationTier: subject?.verificationTier ?? "UNVERIFIED",
     approvedVerificationUpdatedAt: approvedVerification?.updatedAt ?? null,
     score: currentScore
   });

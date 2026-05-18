@@ -2,6 +2,12 @@ export const CERTIFICATE_VALIDITY_DAYS = 365;
 export const RENEWAL_WINDOW_DAYS = 30;
 export const CERTIFICATE_MIN_SCORE = 70;
 
+export const ELIGIBLE_VERIFICATION_TIERS = [
+  "INDIVIDUAL",
+  "BUSINESS",
+  "ENHANCED"
+] as const;
+
 export type CredentialLifecycleStatus =
   | "PENDING"
   | "ACTIVE"
@@ -16,15 +22,24 @@ export function getCertificateId(verificationId: string, issuedAt: Date) {
   return `TL-${issuedAt.getFullYear()}-${verificationId.slice(-8).toUpperCase()}`;
 }
 
+export function hasEligibleVerificationTier(verificationTier?: string | null) {
+  return ELIGIBLE_VERIFICATION_TIERS.includes(
+    verificationTier as (typeof ELIGIBLE_VERIFICATION_TIERS)[number]
+  );
+}
+
 export function getCredentialLifecycle(input: {
   approvedVerificationUpdatedAt?: Date | null;
-  hasApprovedVerification: boolean;
+  verificationTier?: string | null;
   score: number;
   now?: Date;
 }) {
   const now = input.now ?? new Date();
 
-  if (!input.hasApprovedVerification || input.score < CERTIFICATE_MIN_SCORE) {
+  if (
+    !hasEligibleVerificationTier(input.verificationTier) ||
+    input.score < CERTIFICATE_MIN_SCORE
+  ) {
     return {
       eligible: false,
       verified: false,

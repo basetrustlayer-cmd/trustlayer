@@ -10,7 +10,7 @@ describe("certification lifecycle", () => {
 
   it("returns PENDING when there is no approved verification", () => {
     const result = getCredentialLifecycle({
-      hasApprovedVerification: false,
+      verificationTier: "UNVERIFIED",
       score: 100,
       now
     });
@@ -22,7 +22,7 @@ describe("certification lifecycle", () => {
 
   it("returns PENDING when score is below minimum", () => {
     const result = getCredentialLifecycle({
-      hasApprovedVerification: true,
+      verificationTier: "INDIVIDUAL",
       score: 69,
       now
     });
@@ -32,7 +32,7 @@ describe("certification lifecycle", () => {
 
   it("returns ACTIVE before renewal window", () => {
     const result = getCredentialLifecycle({
-      hasApprovedVerification: true,
+      verificationTier: "INDIVIDUAL",
       approvedVerificationUpdatedAt: new Date("2026-01-01T00:00:00.000Z"),
       score: 85,
       now
@@ -45,7 +45,7 @@ describe("certification lifecycle", () => {
 
   it("returns RENEWAL_DUE inside renewal window", () => {
     const result = getCredentialLifecycle({
-      hasApprovedVerification: true,
+      verificationTier: "INDIVIDUAL",
       approvedVerificationUpdatedAt: new Date("2025-06-01T00:00:00.000Z"),
       score: 85,
       now
@@ -57,7 +57,7 @@ describe("certification lifecycle", () => {
 
   it("returns EXPIRED after expiration", () => {
     const result = getCredentialLifecycle({
-      hasApprovedVerification: true,
+      verificationTier: "INDIVIDUAL",
       approvedVerificationUpdatedAt: new Date("2025-01-01T00:00:00.000Z"),
       score: 85,
       now
