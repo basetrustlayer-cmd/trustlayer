@@ -1,18 +1,9 @@
-function getPublicAppUrl() {
-  const url = process.env.NEXT_PUBLIC_APP_URL;
-
-  if (!url) {
-    throw new Error("NEXT_PUBLIC_APP_URL must be set.");
-  }
-
-  return url.replace(/\/$/, "");
-}
-
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getSessionUser } from "../../../../lib/session";
 import { assertBadgeAccessAllowed } from "../../../../lib/billing/limits";
 import { getCertificateId, getCredentialLifecycle } from "../../../../lib/certification/lifecycle";
+import { getVerificationUrl } from "../../../../lib/certification/qr";
 
 function escapePdfText(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -154,7 +145,7 @@ export async function GET() {
   const issuedAt = lifecycle.issuedAt;
   const expiresAt = lifecycle.expiresAt;
   const certificateId = getCertificateId(approvedVerification.id, issuedAt);
-  const verificationUrl = `${getPublicAppUrl()}/verify/${platform.slug}`;
+  const verificationUrl = getVerificationUrl(platform.slug);
 
   const pdf = buildCertificatePdf({
     certificateId,
