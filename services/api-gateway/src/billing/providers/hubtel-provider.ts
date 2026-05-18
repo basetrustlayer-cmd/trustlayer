@@ -12,6 +12,14 @@ export type CreateHubtelCheckoutInput = {
   cancelUrl: string;
 };
 
+export type HubtelWebhookPayload = {
+  organizationId: string;
+  planId: string;
+  status: "SUCCESS" | "FAILED";
+  customerReference?: string;
+  transactionId?: string;
+};
+
 function getHubtelConfig() {
   const clientId = process.env.HUBTEL_CLIENT_ID;
   const clientSecret = process.env.HUBTEL_CLIENT_SECRET;
@@ -59,6 +67,7 @@ export async function createHubtelCheckoutSession(
   }
 
   const checkoutId = randomUUID();
+
   const checkoutUrl =
     `${input.successUrl}` +
     `?provider=hubtel` +
@@ -74,15 +83,22 @@ export async function createHubtelCheckoutSession(
 }
 
 export async function handleHubtelWebhook(
-  payload: {
-    organizationId: string;
-    planId: string;
-    status: "SUCCESS" | "FAILED";
-    customerReference?: string;
-    transactionId?: string;
-  }
+  payload: HubtelWebhookPayload
 ): Promise<void> {
   if (payload.status !== "SUCCESS") {
+    return;
+  }
+
+  const existing = payload.transactionId
+    ? await prisma.subscription.findFirst({
+        where: {
+          provider: PaymentProvider.HUBTEL,
+          externalSubscriptionId: payload.transactionId
+        }
+      })
+    : null;
+
+  if (existing) {
     return;
   }
 
