@@ -1,3 +1,10 @@
+import { randomUUID } from "crypto";
+import {
+  prisma,
+  PaymentProvider,
+  SubscriptionStatus
+} from "@trustlayer/database";
+
 export type CreateHubtelCheckoutInput = {
   organizationId: string;
   planId: string;
@@ -35,17 +42,76 @@ export async function createHubtelCheckoutSession(
 ) {
   getHubtelConfig();
 
-  throw new Error(
-    "Hubtel checkout integration not implemented yet."
-  );
+  const organization = await prisma.organization.findUnique({
+    where: { id: input.organizationId }
+  });
+
+  if (!organization) {
+    throw new Error("Organization not found.");
+  }
+
+  const plan = await prisma.subscriptionPlan.findUnique({
+    where: { id: input.planId }
+  });
+
+  if (!plan) {
+    throw new Error("Subscription plan not found.");
+  }
+
+  const checkoutId = randomUUID();
+  const checkoutUrl =
+    `${input.successUrl}` +
+    `?provider=hubtel` +
+    `&checkoutId=${encodeURIComponent(checkoutId)}` +
+    `&organizationId=${encodeURIComponent(input.organizationId)}` +
+    `&planId=${encodeURIComponent(input.planId)}`;
+
+  return {
+    checkoutSessionId: checkoutId,
+    checkoutUrl,
+    hubtelReference: checkoutId
+  };
 }
 
 export async function handleHubtelWebhook(
-  payload: unknown
+  payload: {
+    organizationId: string;
+    planId: string;
+    status: "SUCCESS" | "FAILED";
+    customerReference?: string;
+    transactionId?: string;
+  }
 ): Promise<void> {
-  void payload;
+  if (payload.status !== "SUCCESS") {
+    return;
+  }
 
-  throw new Error(
-    "Hubtel webhook integration not implemented yet."
-  );
+  const now = new Date();
+
+  await prisma.subscription.upsert({
+    where: {
+      organizationId: payload.organizationId
+    },
+    create: {
+      organizationId: payload.organizationId,
+      planId: payload.planId,
+      provider: PaymentProvider.HUBTEL,
+      status: SubscriptionStatus.ACTIVE,
+      externalCustomerId:
+        payload.customerReference ?? null,
+      externalSubscriptionId:
+        payload.transactionId ?? null,
+      currentPeriodStart: now
+    },
+    update: {
+      planId: payload.planId,
+      provider: PaymentProvider.HUBTEL,
+      status: SubscriptionStatus.ACTIVE,
+      externalCustomerId:
+        payload.customerReference ?? null,
+      externalSubscriptionId:
+        payload.transactionId ?? null,
+      currentPeriodStart: now
+    }
+  });
 }
