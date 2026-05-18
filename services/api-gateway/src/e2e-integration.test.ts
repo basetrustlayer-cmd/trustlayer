@@ -39,15 +39,20 @@ vi.mock("@trustlayer/database", () => ({
 }));
 
 vi.mock("./events/event-publisher.js", async () => {
-  const actual = await vi.importActual<typeof import("./events/event-publisher.js")>(
-    "./events/event-publisher.js"
-  );
+  const actual =
+    await vi.importActual<typeof import("./events/event-publisher.js")>(
+      "./events/event-publisher.js"
+    );
 
   return {
     ...actual,
     publishTrustLayerEvent: vi.fn()
   };
 });
+
+vi.mock("./scoring/scoring-service.js", () => ({
+  recalculateTrustScoreFromMarketplace: vi.fn()
+}));
 
 import { createEscrowHold } from "./escrow/escrow-service.js";
 import {
@@ -56,12 +61,14 @@ import {
   resolveDispute
 } from "./disputes/dispute-service.js";
 import { notify } from "./notifications/notification-service.js";
+import { recalculateTrustScoreFromMarketplace } from "./scoring/scoring-service.js";
 
 describe("TrustLayer end-to-end service flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     db.walletAccount.findFirst.mockResolvedValue(null);
+
     db.walletAccount.create.mockImplementation(({ data }) =>
       Promise.resolve({
         id: `${data.subjectId ?? data.organizationId}-${data.type}`,
@@ -172,11 +179,13 @@ describe("TrustLayer end-to-end service flow", () => {
       status: "HELD",
       metadata: {}
     });
+
     db.escrowHold.update.mockResolvedValueOnce({
       id: "escrow_1",
       reference: "order_1001",
       status: "RELEASED"
     });
+
     db.dispute.update.mockResolvedValueOnce({
       ...reviewedDispute,
       status: "RESOLVED",
@@ -210,5 +219,67 @@ describe("TrustLayer end-to-end service flow", () => {
 
     expect(notification.channels).toEqual(["EVENT_BUS", "IN_APP"]);
     expect(db.eventLog.create).toHaveBeenCalled();
+  });
+
+  it("recalculates trust scores for both counterparties", async () => {
+    vi.mocked(recalculateTrustScoreFromMarketplace)
+      .mockResolvedValueOnce({
+        subjectId: "seller_1",
+        role: "seller",
+        score: 88,
+        tier: "high_trust",
+        tierCeiling: 100,
+        confidence: 0.95,
+        factors: {
+          identity: 100,
+          transactions: 100,
+          reviews: 90,
+          disputes: 100,
+          roleSpecific: 100
+        }
+      })
+      .mockResolvedValueOnce({
+        subjectId: "buyer_1",
+        role: "buyer",
+        score: 76,
+        tier: "good_standing",
+        tierCeiling: 100,
+        confidence: 0.9,
+        factors: {
+          identity: 100,
+          transactions: 80,
+          reviews: 75,
+          disputes: 100,
+          roleSpecific: 80
+        }
+      });
+
+    await recalculateTrustScoreFromMarketplace(
+      "seller_1",
+      "seller",
+      "transaction.created"
+    );
+
+    await recalculateTrustScoreFromMarketplace(
+      "buyer_1",
+      "buyer",
+      "transaction.created"
+    );
+
+    expect(recalculateTrustScoreFromMarketplace).toHaveBeenCalledTimes(2);
+
+    expect(recalculateTrustScoreFromMarketplace).toHaveBeenNthCalledWith(
+      1,
+      "seller_1",
+      "seller",
+      "transaction.created"
+    );
+
+    expect(recalculateTrustScoreFromMarketplace).toHaveBeenNthCalledWith(
+      2,
+      "buyer_1",
+      "buyer",
+      "transaction.created"
+    );
   });
 });
