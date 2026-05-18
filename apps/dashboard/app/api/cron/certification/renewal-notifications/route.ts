@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runRenewalNotificationScan } from "../../../admin/certification/renewal-notifications/route";
+import { runRenewalNotificationScan } from "../../../../../lib/certification/renewal-notifications";
 
 function getCronSecret() {
   const secret = process.env.CRON_SECRET;
