@@ -295,20 +295,19 @@ it("runs complete escrow lifecycle from hold to release with fee split", async (
     };
   });
 
-  const escrowAction =
+  const escrowAction = (
     "escrowActionResult" in releaseResult
       ? releaseResult.escrowActionResult
-      : releaseResult;
-
-  const escrowAction = resolution.escrowActionResult as {
-      hold: { status: string };
-      ledgerTransaction: {
-        type: string;
-        entries: unknown[];
-      };
+      : releaseResult
+  ) as {
+    hold: { status: string };
+    ledgerTransaction: {
+      type: string;
+      entries: unknown[];
     };
+  };
 
-    expect(escrowAction.hold.status).toBe("RELEASED");
+  expect(escrowAction.hold.status).toBe("RELEASED");
   expect(escrowAction.ledgerTransaction.type).toBe("ESCROW_RELEASE");
   expect(escrowAction.ledgerTransaction.entries).toEqual([
     {
