@@ -300,7 +300,15 @@ it("runs complete escrow lifecycle from hold to release with fee split", async (
       ? releaseResult.escrowActionResult
       : releaseResult;
 
-  expect(escrowAction.hold.status).toBe("RELEASED");
+  const escrowAction = resolution.escrowActionResult as {
+      hold: { status: string };
+      ledgerTransaction: {
+        type: string;
+        entries: unknown[];
+      };
+    };
+
+    expect(escrowAction.hold.status).toBe("RELEASED");
   expect(escrowAction.ledgerTransaction.type).toBe("ESCROW_RELEASE");
   expect(escrowAction.ledgerTransaction.entries).toEqual([
     {
