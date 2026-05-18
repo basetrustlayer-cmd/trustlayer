@@ -185,7 +185,13 @@ paths:
   /v1/disputes:
     post:
       tags: [Marketplace Events]
-      summary: Submit a dispute event
+      summary: Submit a legacy simple dispute event
+      deprecated: true
+      description: >
+        Legacy simple marketplace dispute event. This endpoint records a basic dispute
+        and recalculates trust scores, but it does not support evidence submission,
+        escrow release, escrow refund, or full dispute lifecycle management.
+        New integrations should use POST /v1/dispute-resolution/disputes.
       operationId: createDispute
       requestBody:
         required: true
@@ -545,7 +551,11 @@ paths:
   /v1/dispute-resolution/disputes:
     post:
       tags: [Dispute Resolution]
-      summary: Open dispute resolution case
+      summary: Open canonical dispute resolution case
+      description: >
+        Canonical dispute API for managed dispute resolution. Supports evidence,
+        review workflow, escrow release to seller, escrow refund to buyer,
+        and no-escrow resolution outcomes.
       operationId: openDisputeResolutionCase
       requestBody:
         required: true
