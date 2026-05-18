@@ -13,17 +13,12 @@
     "format:check": "prettier --check .",
     "openapi:lock": "node scripts/check-openapi-lock.js",
     "test:coverage": "vitest run --coverage",
-    "test:contract": "dredd --config ./dredd.yml"
+    "test:contract": "pnpm dlx dredd@14.1.0 --config ./dredd.yml"
   },
   "pnpm": {
     "overrides": {
       "@faker-js/faker": "5.5.3",
       "postcss": "8.5.10"
-    },
-    "auditConfig": {
-      "ignoreDependencies": [
-        "dredd"
-      ]
     }
   },
   "devDependencies": {
@@ -33,7 +28,6 @@
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
     "@vitest/coverage-v8": "^4.1.6",
-    "dredd": "^14.1.0",
     "eslint": "^9.39.4",
     "prettier": "^3.8.3",
     "prisma": "^6.0.0",
