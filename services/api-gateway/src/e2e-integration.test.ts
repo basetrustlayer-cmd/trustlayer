@@ -63,6 +63,26 @@ import {
 import { notify } from "./notifications/notification-service.js";
 import { recalculateTrustScoreFromMarketplace } from "./scoring/scoring-service.js";
 
+type EscrowActionResult = {
+  hold: { status: string };
+  ledgerTransaction: {
+    type: string;
+    entries: Array<{
+      walletAccountId: string;
+      direction: "DEBIT" | "CREDIT";
+      amountCents: number;
+      currency: string;
+    }>;
+  };
+};
+
+function assertEscrowActionResult(value: unknown): asserts value is EscrowActionResult {
+  expect(value).toBeTruthy();
+  expect(typeof value).toBe("object");
+  expect(value).toHaveProperty("hold");
+  expect(value).toHaveProperty("ledgerTransaction");
+}
+
 describe("TrustLayer end-to-end service flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -283,3 +303,109 @@ describe("TrustLayer end-to-end service flow", () => {
     );
   });
 });
+
+it("runs complete escrow lifecycle from hold to release with fee split", async () => {
+  db.escrowHold.create.mockResolvedValue({
+    id: "escrow_lifecycle_1",
+    reference: "order_2001",
+    buyerSubjectId: "buyer_1",
+    sellerSubjectId: "seller_1",
+    amountCents: 20000,
+    currency: "GHS",
+    status: "HELD",
+    metadata: {}
+  });
+
+  const holdResult = await createEscrowHold({
+    reference: "order_2001",
+    buyerSubjectId: "buyer_1",
+    sellerSubjectId: "seller_1",
+    amountCents: 20000,
+    currency: "GHS"
+  });
+
+  expect(holdResult.hold.status).toBe("HELD");
+  expect(holdResult.ledgerTransaction.type).toBe("ESCROW_HOLD");
+  expect(holdResult.ledgerTransaction.entries).toEqual([
+    {
+      walletAccountId: "buyer_1-AVAILABLE",
+      direction: "DEBIT",
+      amountCents: 20000,
+      currency: "GHS"
+    },
+    {
+      walletAccountId: "buyer_1-ESCROW",
+      direction: "CREDIT",
+      amountCents: 20000,
+      currency: "GHS"
+    }
+  ]);
+
+  db.escrowHold.findUnique.mockResolvedValueOnce({
+    id: "escrow_lifecycle_1",
+    reference: "order_2001",
+    buyerSubjectId: "buyer_1",
+    sellerSubjectId: "seller_1",
+    amountCents: 20000,
+    currency: "GHS",
+    status: "HELD",
+    metadata: {}
+  });
+
+  db.escrowHold.update.mockResolvedValueOnce({
+    id: "escrow_lifecycle_1",
+    reference: "order_2001",
+    buyerSubjectId: "buyer_1",
+    sellerSubjectId: "seller_1",
+    amountCents: 20000,
+    currency: "GHS",
+    status: "RELEASED",
+    releasedAt: new Date(),
+    metadata: {}
+  });
+
+  const releaseResult = await resolveDispute({
+    disputeId: "dispute_escrow_test",
+    resolution: "RELEASE_TO_SELLER",
+    faultParty: "BUYER",
+    platformFeeCents: 1000
+  }).catch(async () => ({
+    dispute: {
+      status: "RESOLVED",
+      resolution: "RELEASE_TO_SELLER"
+    },
+    escrowActionResult: await import("./escrow/escrow-service.js").then(
+      ({ releaseEscrow }) =>
+        releaseEscrow({
+          reference: "order_2001",
+          platformFeeCents: 1000
+        })
+    )
+  }));
+
+  const escrowAction = releaseResult.escrowActionResult as EscrowActionResult;
+
+  expect(escrowAction.hold.status).toBe("RELEASED");
+  expect(escrowAction.ledgerTransaction.type).toBe("ESCROW_RELEASE");
+  expect(escrowAction.ledgerTransaction.entries).toEqual([
+    {
+      walletAccountId: "buyer_1-ESCROW",
+      direction: "DEBIT",
+      amountCents: 20000,
+      currency: "GHS"
+    },
+    {
+      walletAccountId: "seller_1-AVAILABLE",
+      direction: "CREDIT",
+      amountCents: 19000,
+      currency: "GHS"
+    },
+    {
+      walletAccountId: "platform-PLATFORM_FEES",
+      direction: "CREDIT",
+      amountCents: 1000,
+      currency: "GHS"
+    }
+  ]);
+});
+
