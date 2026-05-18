@@ -24,16 +24,18 @@ export class FlutterwaveVerifyProvider implements KycProviderAdapter {
       );
     }
 
-    return {
-      provider: this.code,
-      status: "PENDING",
-      verified: false,
-      confidence: 0.25,
-      reference: `flutterwave_verify_${request.subjectId}`,
-      raw: {
-        mode: "stub",
-        message: "Flutterwave Verify adapter scaffold created. Real API call not yet implemented."
-      }
-    };
+    if (process.env.FLUTTERWAVE_VERIFY_REAL_MODE !== "true") {
+      throw new KycProviderError(
+        "Flutterwave Verify real verification is not implemented. Do not enable this provider until the API integration is complete.",
+        "PROVIDER_UNAVAILABLE",
+        this.code
+      );
+    }
+
+    throw new KycProviderError(
+      "Flutterwave Verify real verification mode was enabled, but no live API implementation exists yet.",
+      "PROVIDER_UNAVAILABLE",
+      this.code
+    );
   }
 }
