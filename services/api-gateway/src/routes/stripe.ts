@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import {
   constructStripeWebhookEvent,
@@ -20,6 +20,10 @@ const createPortalSchema = z.object({
   returnUrl: z.string().url()
 });
 
+type StripeWebhookRequest = FastifyRequest & {
+  rawBody?: Buffer | string;
+};
+
 function getStripe(): Stripe {
   const secretKey = process.env.STRIPE_SECRET_KEY;
 
@@ -28,6 +32,24 @@ function getStripe(): Stripe {
   }
 
   return new Stripe(secretKey);
+}
+
+function getWebhookRawBody(request: StripeWebhookRequest): Buffer {
+  if (Buffer.isBuffer(request.rawBody)) {
+    return request.rawBody;
+  }
+
+  if (typeof request.rawBody === "string") {
+    return Buffer.from(request.rawBody, "utf8");
+  }
+
+  if (Buffer.isBuffer(request.body)) {
+    return request.body;
+  }
+
+  throw new Error(
+    "Stripe webhook raw body is unavailable. Register @fastify/raw-body before Stripe routes."
+  );
 }
 
 export async function registerStripeRoutes(app: FastifyInstance): Promise<void> {
@@ -62,7 +84,7 @@ export async function registerStripeRoutes(app: FastifyInstance): Promise<void> 
         rawBody: true
       }
     },
-    async (request, reply) => {
+    async (request: StripeWebhookRequest, reply) => {
       const signature = request.headers["stripe-signature"];
 
       if (typeof signature !== "string") {
@@ -71,11 +93,8 @@ export async function registerStripeRoutes(app: FastifyInstance): Promise<void> 
         });
       }
 
-      const rawBody = Buffer.isBuffer(request.body)
-        ? request.body
-        : Buffer.from(JSON.stringify(request.body));
-
       try {
+        const rawBody = getWebhookRawBody(request);
         const event = constructStripeWebhookEvent(rawBody, signature);
 
         await handleStripeWebhookEvent(event);
@@ -133,9 +152,7 @@ export async function registerStripeRoutes(app: FastifyInstance): Promise<void> 
       });
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to create billing portal session";
+        error instanceof Error ? error.message : "Stripe portal failed";
 
       return reply.status(400).send({
         error: message

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rawBody from "fastify-raw-body";
 import { z } from "zod";
 import { apiKeyAuthHook } from "./auth/api-key-auth.js";
 import { registerApiKeyRoutes } from "./routes/api-keys.js";
@@ -35,6 +36,13 @@ const kyc = createDefaultKycOrchestrator();
 
 await app.register(cors, {
   origin: true
+});
+
+await app.register(rawBody, {
+  field: "rawBody",
+  global: false,
+  encoding: false,
+  runFirst: true
 });
 
 registerObservabilityHooks(app);
