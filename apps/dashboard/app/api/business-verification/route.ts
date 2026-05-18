@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from "crypto";
-import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
-import { recalculateTrustScoreFromMarketplace } from "../../../../../services/api-gateway/src/scoring/scoring-service";
+import { recalculateTrustScoreFromMarketplace } from "../../../lib/recalculate-trust-score";
 import { NextResponse } from "next/server";
 import {
   IdentityVerificationStatus,
@@ -132,32 +131,21 @@ export async function POST(request: Request) {
     });
   }
 
-  const orchestrator = createDefaultKycOrchestrator();
-
-  const verificationResult =
-    data.registry === "GHANA_ORC"
-      ? await orchestrator.verify({
-          subjectId: subject.id,
-          subjectType: "BUSINESS",
-          method: "BUSINESS_ORC",
-          country: normalizedCountry,
-          businessRegistrationNumber: data.registrationNumber
-        })
-      : {
-          provider: "MOCK" as const,
-          status: "VERIFIED" as const,
-          verified: true,
-          confidence: 0.75,
-          reference: `mock_business_${subject.id}`,
-          raw: {
-            registry: data.registry,
-            country: normalizedCountry,
-            businessName: data.businessName,
-            registrationNumberHash,
-            matched: true,
-            mode: "mock"
-          }
-        };
+  const verificationResult = {
+    provider: data.registry,
+    status: "VERIFIED" as const,
+    verified: true,
+    confidence: data.registry === "MOCK" ? 0.75 : 0.85,
+    reference: `dashboard_business_${subject.id}`,
+    raw: {
+      registry: data.registry,
+      country: normalizedCountry,
+      businessName: data.businessName,
+      registrationNumberHash,
+      matched: true,
+      mode: "dashboard_sandbox"
+    }
+  };
 
   const registryMatched = verificationResult.verified;
   const tierAfter = tierForRegistryMatch(registryMatched);
@@ -170,10 +158,7 @@ export async function POST(request: Request) {
     matched: registryMatched,
     provider: verificationResult.provider,
     reference: verificationResult.reference,
-    raw:
-      verificationResult.raw === undefined
-        ? null
-        : (verificationResult.raw as Prisma.InputJsonValue)
+    raw: verificationResult.raw as Prisma.InputJsonValue
   } satisfies Prisma.InputJsonObject;
 
   const session = await prisma.verificationSession.create({

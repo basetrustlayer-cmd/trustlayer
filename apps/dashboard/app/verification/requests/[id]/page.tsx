@@ -54,11 +54,8 @@ function formatFileSize(bytes: number) {
   return `${bytes} bytes`;
 }
 
-export default function VerificationSubmissionPage({
-  params
-}: {
-  params: { id: string };
-}) {
+export default function VerificationSubmissionPage() {
+  const params = { id: typeof window !== "undefined" ? window.location.pathname.split("/").filter(Boolean).at(-1) ?? "" : "" };
   const [request, setRequest] = useState<VerificationRequest | null>(null);
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [message, setMessage] = useState("");
