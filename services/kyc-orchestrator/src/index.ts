@@ -10,6 +10,7 @@ import { GhanaBusinessRegistryProvider } from "./providers/adapters/ghana-busine
 import { PaystackIdentityProvider } from "./providers/adapters/paystack-identity-provider.js";
 import { FlutterwaveVerifyProvider } from "./providers/adapters/flutterwave-verify-provider.js";
 import { StripeIdentityProvider } from "./providers/adapters/stripe-identity-provider.js";
+import { assertValidKycResult, normalizeKycRequest } from "./validation/request-validation.js";
 
 export * from "./types/index.js";
 export * from "./errors/provider-error.js";
@@ -29,8 +30,13 @@ export class KycOrchestrator {
   }
 
   async verify(request: KycVerificationRequest): Promise<KycVerificationResult> {
-    const provider = this.router.selectProvider(request);
-    return provider.verify(request);
+    const normalizedRequest = normalizeKycRequest(request);
+    const provider = this.router.selectProvider(normalizedRequest);
+    const result = await provider.verify(normalizedRequest);
+
+    assertValidKycResult(result);
+
+    return result;
   }
 }
 
