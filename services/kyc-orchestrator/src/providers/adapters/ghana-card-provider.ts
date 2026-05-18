@@ -4,6 +4,7 @@ import type {
   KycVerificationResult
 } from "../../types/index.js";
 import { KycProviderError } from "../../errors/provider-error.js";
+import { requireKycMockMode } from "../config.js";
 
 export class GhanaCardProvider implements KycProviderAdapter {
   code = "GHANA_CARD" as const;
@@ -20,6 +21,8 @@ export class GhanaCardProvider implements KycProviderAdapter {
         this.code
       );
     }
+
+    requireKycMockMode("Ghana Card");
 
     return {
       provider: this.code,
