@@ -24,16 +24,18 @@ export class PaystackIdentityProvider implements KycProviderAdapter {
       );
     }
 
-    return {
-      provider: this.code,
-      status: "PENDING",
-      verified: false,
-      confidence: 0.25,
-      reference: `paystack_identity_${request.subjectId}`,
-      raw: {
-        mode: "stub",
-        message: "Paystack Identity adapter scaffold created. Real API call not yet implemented."
-      }
-    };
+    if (process.env.PAYSTACK_IDENTITY_REAL_MODE !== "true") {
+      throw new KycProviderError(
+        "Paystack Identity real verification is not implemented. Do not enable this provider until the API integration is complete.",
+        "PROVIDER_UNAVAILABLE",
+        this.code
+      );
+    }
+
+    throw new KycProviderError(
+      "Paystack Identity real verification mode was enabled, but no live API implementation exists yet.",
+      "PROVIDER_UNAVAILABLE",
+      this.code
+    );
   }
 }
