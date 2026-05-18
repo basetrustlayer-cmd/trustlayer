@@ -89,7 +89,7 @@ async function runRenewalNotificationScan(userId: string | null) {
       : null;
 
     const lifecycle = getCredentialLifecycle({
-      hasApprovedVerification: true,
+      verificationTier: "INDIVIDUAL",
       approvedVerificationUpdatedAt: request.updatedAt,
       score: score?.score ?? 0
     });

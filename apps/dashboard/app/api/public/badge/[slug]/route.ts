@@ -75,7 +75,7 @@ export async function GET(
   const score = trustScore?.score ?? 0;
 
   const lifecycle = getCredentialLifecycle({
-    hasApprovedVerification: Boolean(approvedVerification),
+    verificationTier: subject?.verificationTier ?? "UNVERIFIED",
     approvedVerificationUpdatedAt:
       approvedVerification?.updatedAt ?? null,
     score
