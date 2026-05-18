@@ -57,6 +57,26 @@ import {
 } from "./disputes/dispute-service.js";
 import { notify } from "./notifications/notification-service.js";
 
+type EscrowActionResult = {
+  hold: { status: string };
+  ledgerTransaction: {
+    type: string;
+    entries: Array<{
+      walletAccountId: string;
+      direction: "DEBIT" | "CREDIT";
+      amountCents: number;
+      currency: string;
+    }>;
+  };
+};
+
+function assertEscrowActionResult(value: unknown): asserts value is EscrowActionResult {
+  expect(value).toBeTruthy();
+  expect(typeof value).toBe("object");
+  expect(value).toHaveProperty("hold");
+  expect(value).toHaveProperty("ledgerTransaction");
+}
+
 describe("TrustLayer end-to-end service flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
