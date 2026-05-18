@@ -28,7 +28,7 @@ export class GhanaBusinessRegistryProvider implements KycProviderAdapter {
       );
     }
 
-    requireKycMockMode("Ghana ORC");
+    requireKycMockMode("Ghana ORC", this.code);
 
     return {
       provider: this.code,

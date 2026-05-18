@@ -22,7 +22,7 @@ export class GhanaCardProvider implements KycProviderAdapter {
       );
     }
 
-    requireKycMockMode("Ghana Card");
+    requireKycMockMode("Ghana Card", this.code);
 
     return {
       provider: this.code,
