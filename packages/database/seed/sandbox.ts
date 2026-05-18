@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,12 @@ const roles = ["seller", "buyer", "worker", "hirer", "platform"] as const;
 function subjectId(tier: string, index: number): string {
   return `sandbox_${tier.toLowerCase()}_${String(index).padStart(2, "0")}`;
 }
+
+function hashApiKey(rawApiKey: string): string {
+  return crypto.createHash("sha256").update(rawApiKey).digest("hex");
+}
+
+const sandboxApiKey = process.env.TRUSTLAYER_SANDBOX_API_KEY ?? "tl_test_sandbox_seed_key_do_not_use_in_production";
 
 function scoreForTier(tier: string, index: number): number {
   if (tier === "UNVERIFIED") return 15 + (index % 10);
@@ -123,11 +130,27 @@ async function main() {
     }
   });
 
-  await prisma.apiKey.create({
-    data: {
+  await prisma.apiKey.upsert({
+    where: {
+      keyHash: hashApiKey(sandboxApiKey)
+    },
+    update: {
       platformId: platform.id,
-      keyPrefix: "tl_test_seed",
-      keyHash: `sandbox_seed_${Date.now()}`,
+      keyPrefix: sandboxApiKey.slice(0, 12),
+      scopes: [
+        "tier:read",
+        "verification:write",
+        "score:read",
+        "leaderboard:read"
+      ],
+      environment: "TEST",
+      revokedAt: null,
+      expiresAt: null
+    },
+    create: {
+      platformId: platform.id,
+      keyPrefix: sandboxApiKey.slice(0, 12),
+      keyHash: hashApiKey(sandboxApiKey),
       scopes: [
         "tier:read",
         "verification:write",
@@ -137,6 +160,9 @@ async function main() {
       environment: "TEST"
     }
   });
+
+  console.log(`Sandbox API key prefix: ${sandboxApiKey.slice(0, 12)}`);
+  console.log("Set TRUSTLAYER_SANDBOX_API_KEY to override the default sandbox key.");
 
   const subjects: string[] = [];
 
