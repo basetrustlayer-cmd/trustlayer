@@ -7,7 +7,12 @@ const TIER_CEILINGS = {
 
 type VerificationTier = keyof typeof TIER_CEILINGS;
 
-export type ScoreRole = "seller" | "buyer" | "worker" | "hirer" | "platform";
+export type ScoreRole =
+  | "seller"
+  | "buyer"
+  | "worker"
+  | "hirer"
+  | "platform";
 
 export type TrustScoreFactors = {
   identity: number;
@@ -29,6 +34,7 @@ export type TrustScoreCalculationInput = {
   confirmedFraudFlag?: boolean;
   confirmedFraudSeverity?: "low" | "high";
   verificationTier?: string | null;
+  lastActivityAt?: Date | string | null;
   reason?: string;
 };
 
@@ -75,11 +81,47 @@ function calculateConfidence(input: TrustScoreCalculationInput): number {
   if ((input.transactionCount ?? 0) >= 5) confidence += 0.15;
 
   const reviewCount =
-    (input.positiveReviewCount ?? 0) + (input.negativeReviewCount ?? 0);
+    (input.positiveReviewCount ?? 0) +
+    (input.negativeReviewCount ?? 0);
 
   if (reviewCount >= 3) confidence += 0.1;
 
   return Number(clamp(confidence, 0.1, 0.95).toFixed(2));
+}
+
+function calculateInactivityPenalty(
+  lastActivityAt?: Date | string | null
+): number {
+  if (!lastActivityAt) {
+    return 0;
+  }
+
+  const activityDate =
+    lastActivityAt instanceof Date
+      ? lastActivityAt
+      : new Date(lastActivityAt);
+
+  if (Number.isNaN(activityDate.getTime())) {
+    return 0;
+  }
+
+  const daysInactive =
+    (Date.now() - activityDate.getTime()) /
+    (1000 * 60 * 60 * 24);
+
+  if (daysInactive <= 90) {
+    return 0;
+  }
+
+  if (daysInactive <= 180) {
+    return 10;
+  }
+
+  if (daysInactive <= 365) {
+    return 20;
+  }
+
+  return 30;
 }
 
 export function calculateTrustScoreForPersistence(
@@ -103,7 +145,9 @@ export function calculateTrustScoreForPersistence(
   const totalReviews = positiveReviews + negativeReviews;
 
   const reviews =
-    totalReviews > 0 ? clamp((positiveReviews / totalReviews) * 100) : 0;
+    totalReviews > 0
+      ? clamp((positiveReviews / totalReviews) * 100)
+      : 0;
 
   const disputes = clamp(100 - (input.disputeCount ?? 0) * 25);
   const roleSpecific = transactions;
@@ -121,7 +165,15 @@ export function calculateTrustScoreForPersistence(
         ? 50
         : 25
       : 0;
-  const rawScore = Math.round(clamp(weightedScore - fraudPenalty));
+
+  const inactivityPenalty = calculateInactivityPenalty(
+    input.lastActivityAt
+  );
+
+  const rawScore = Math.round(
+    clamp(weightedScore - fraudPenalty - inactivityPenalty)
+  );
+
   const score = Math.min(rawScore, tierCeiling);
 
   return {
