@@ -19,6 +19,11 @@
     "overrides": {
       "@faker-js/faker": "5.5.3",
       "postcss": "8.5.10"
+    },
+    "auditConfig": {
+      "ignoreDependencies": [
+        "dredd"
+      ]
     }
   },
   "devDependencies": {
