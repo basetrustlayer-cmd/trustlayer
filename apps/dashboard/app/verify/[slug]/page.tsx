@@ -31,11 +31,8 @@ function formatLabel(value: string | null | undefined) {
     .join(" ");
 }
 
-export default function PublicVerificationPage({
-  params
-}: {
-  params: { slug: string };
-}) {
+export default function PublicVerificationPage() {
+  const params = { slug: typeof window !== "undefined" ? window.location.pathname.split("/").filter(Boolean).at(-1) ?? "" : "" };
   const [data, setData] = useState<PublicVerification | null>(null);
   const [message, setMessage] = useState("");
 

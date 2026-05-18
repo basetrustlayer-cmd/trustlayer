@@ -55,11 +55,8 @@ function formatFileSize(bytes: number) {
   return `${bytes} bytes`;
 }
 
-export default function VerificationDetailPage({
-  params
-}: {
-  params: { id: string };
-}) {
+export default function VerificationDetailPage() {
+  const params = { id: typeof window !== "undefined" ? window.location.pathname.split("/").filter(Boolean).at(-1) ?? "" : "" };
   const [request, setRequest] = useState<VerificationRequestDetail | null>(null);
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);

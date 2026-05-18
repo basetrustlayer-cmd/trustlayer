@@ -17,11 +17,13 @@ function getCertificateId(verificationId: string | null, issuedAt: Date | null) 
 
 export async function GET(
   _request: Request,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await context.params;
+
   const platform = await prisma.platform.findUnique({
     where: {
-      slug: params.slug
+      slug
     },
     include: {
       organization: true
