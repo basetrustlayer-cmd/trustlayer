@@ -38,17 +38,24 @@ function getHubtelConfig() {
     throw new Error("HUBTEL_MERCHANT_ACCOUNT_NUMBER is required.");
   }
 
+  const checkoutUrl = process.env.HUBTEL_CHECKOUT_URL;
+
+  if (!checkoutUrl) {
+    throw new Error("HUBTEL_CHECKOUT_URL is required.");
+  }
+
   return {
     clientId,
     clientSecret,
-    merchantAccountNumber
+    merchantAccountNumber,
+    checkoutUrl
   };
 }
 
 export async function createHubtelCheckoutSession(
   input: CreateHubtelCheckoutInput
 ) {
-  getHubtelConfig();
+  const config = getHubtelConfig();
 
   const organization = await prisma.organization.findUnique({
     where: { id: input.organizationId }
@@ -68,17 +75,65 @@ export async function createHubtelCheckoutSession(
 
   const checkoutId = randomUUID();
 
-  const checkoutUrl =
-    `${input.successUrl}` +
-    `?provider=hubtel` +
-    `&checkoutId=${encodeURIComponent(checkoutId)}` +
-    `&organizationId=${encodeURIComponent(input.organizationId)}` +
-    `&planId=${encodeURIComponent(input.planId)}`;
+  const response = await fetch(config.checkoutUrl, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString("base64")}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      merchantAccountNumber: config.merchantAccountNumber,
+      clientReference: checkoutId,
+      description: `TrustLayer subscription for ${organization.name}`,
+      amount: plan.priceCents / 100,
+      currency: plan.currency,
+      callbackUrl: input.successUrl,
+      cancellationUrl: input.cancelUrl,
+      metadata: {
+        organizationId: input.organizationId,
+        planId: input.planId
+      }
+    })
+  });
+
+  const payload = await response.json().catch(() => null) as {
+    checkoutUrl?: string;
+    paymentUrl?: string;
+    url?: string;
+    data?: {
+      checkoutUrl?: string;
+      paymentUrl?: string;
+      url?: string;
+      checkoutId?: string;
+      clientReference?: string;
+    };
+  } | null;
+
+  if (!response.ok) {
+    throw new Error("Hubtel checkout request failed.");
+  }
+
+  const resolvedCheckoutUrl =
+    payload?.checkoutUrl ??
+    payload?.paymentUrl ??
+    payload?.url ??
+    payload?.data?.checkoutUrl ??
+    payload?.data?.paymentUrl ??
+    payload?.data?.url;
+
+  const resolvedReference =
+    payload?.data?.checkoutId ??
+    payload?.data?.clientReference ??
+    checkoutId;
+
+  if (!resolvedCheckoutUrl) {
+    throw new Error("Hubtel checkout response did not include a checkout URL.");
+  }
 
   return {
-    checkoutSessionId: checkoutId,
-    checkoutUrl,
-    hubtelReference: checkoutId
+    checkoutSessionId: resolvedReference,
+    checkoutUrl: resolvedCheckoutUrl,
+    hubtelReference: resolvedReference
   };
 }
 
