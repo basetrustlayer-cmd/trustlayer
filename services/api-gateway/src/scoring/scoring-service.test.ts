@@ -130,3 +130,47 @@ describe("calculateTrustScoreForPersistence", () => {
     expect(result.confidence).toBe(0.25);
   });
 });
+
+it("applies inactivity penalty after 180 days", () => {
+  const active = calculateTrustScoreForPersistence({
+    subjectId: "subject_1",
+    identityVerified: true,
+    transactionCount: 10,
+    positiveReviewCount: 5,
+    verificationTier: "ENHANCED",
+    lastActivityAt: new Date()
+  });
+
+  const inactive = calculateTrustScoreForPersistence({
+    subjectId: "subject_1",
+    identityVerified: true,
+    transactionCount: 10,
+    positiveReviewCount: 5,
+    verificationTier: "ENHANCED",
+    lastActivityAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000)
+  });
+
+  expect(active.score - inactive.score).toBe(20);
+});
+
+it("caps inactivity penalty at 30 after one year", () => {
+  const active = calculateTrustScoreForPersistence({
+    subjectId: "subject_1",
+    identityVerified: true,
+    transactionCount: 10,
+    positiveReviewCount: 5,
+    verificationTier: "ENHANCED",
+    lastActivityAt: new Date()
+  });
+
+  const stale = calculateTrustScoreForPersistence({
+    subjectId: "subject_1",
+    identityVerified: true,
+    transactionCount: 10,
+    positiveReviewCount: 5,
+    verificationTier: "ENHANCED",
+    lastActivityAt: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000)
+  });
+
+  expect(active.score - stale.score).toBe(30);
+});
