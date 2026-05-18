@@ -28,6 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
     "@vitest/coverage-v8": "^4.1.6",
+    "dredd": "^14.1.0",
     "eslint": "^9.39.4",
     "prettier": "^3.8.3",
     "prisma": "^6.0.0",
