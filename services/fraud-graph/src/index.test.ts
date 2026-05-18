@@ -39,3 +39,23 @@ describe("fraud graph risk analytics", () => {
     expect(getRiskLevel(70)).toBe("high");
   });
 });
+
+it("detects high risk when multiple subjects share the same phone number", () => {
+  const sharedPhone = {
+    identifierType: "phone",
+    identifierHash: "phone_hash_shared",
+    subjectIds: [
+      "subject_1",
+      "subject_2",
+      "subject_3",
+      "subject_4"
+    ],
+    subjectCount: 4
+  };
+
+  const analyticsScore = calculateGraphRiskScore([sharedPhone]);
+
+  expect(analyticsScore).toBe(100);
+  expect(getRiskLevel(analyticsScore)).toBe("high");
+});
+
