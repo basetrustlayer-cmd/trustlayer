@@ -31,6 +31,34 @@ security:
   - ApiKeyAuth: []
 
 paths:
+  /api/public/badge/{slug}:
+    get:
+      tags: [Public Verification]
+      summary: Get public TrustLayer verification badge SVG
+      operationId: getPublicVerificationBadge
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Public platform slug.
+      responses:
+        '200':
+          description: SVG verification badge
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Badge not found
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /v1/verify:
     post:
       tags: [Verification]
