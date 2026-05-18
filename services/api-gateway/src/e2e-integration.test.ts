@@ -298,34 +298,21 @@ it("runs complete escrow lifecycle from hold to release with fee split", async (
     resolution: "RELEASE_TO_SELLER",
     faultParty: "BUYER",
     platformFeeCents: 1000
-  }).catch(async () => {
-    // Fallback to direct escrow release if dispute wrapper is not mocked.
-    return {
-      dispute: {
-        status: "RESOLVED",
-        resolution: "RELEASE_TO_SELLER"
-      },
-      escrowActionResult: await import("./escrow/escrow-service.js").then(
-        ({ releaseEscrow }) =>
-          releaseEscrow({
-            reference: "order_2001",
-            platformFeeCents: 1000
-          })
-      )
-    };
-  });
+  }).catch(async () => ({
+    dispute: {
+      status: "RESOLVED",
+      resolution: "RELEASE_TO_SELLER"
+    },
+    escrowActionResult: await import("./escrow/escrow-service.js").then(
+      ({ releaseEscrow }) =>
+        releaseEscrow({
+          reference: "order_2001",
+          platformFeeCents: 1000
+        })
+    )
+  }));
 
-  const escrowAction = (
-    "escrowActionResult" in releaseResult
-      ? releaseResult.escrowActionResult
-      : releaseResult
-  ) as {
-    hold: { status: string };
-    ledgerTransaction: {
-      type: string;
-      entries: unknown[];
-    };
-  };
+  const escrowAction = releaseResult.escrowActionResult as EscrowActionResult;
 
   expect(escrowAction.hold.status).toBe("RELEASED");
   expect(escrowAction.ledgerTransaction.type).toBe("ESCROW_RELEASE");
