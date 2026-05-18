@@ -1,0 +1,106 @@
+model:
+  name: TrustLayer Trust Score
+  version: 1.0.0
+  status: active
+  owner: TrustLayer Risk & Compliance
+  effective_date: 2026-05-18
+  description: >
+    Weighted trust scoring model used to evaluate individuals,
+    businesses, workers, platforms, buyers, and hirers.
+
+tiers:
+  ceilings:
+    UNVERIFIED: 30
+    INDIVIDUAL: 65
+    BUSINESS: 85
+    ENHANCED: 100
+
+weights:
+  identity: 0.30
+  transactions: 0.25
+  reviews: 0.20
+  disputes: 0.15
+  role_specific: 0.10
+
+factor_definitions:
+  identity:
+    description: Identity verification and credential evidence.
+    range: [0, 100]
+
+  transactions:
+    description: Historical transaction volume and completion activity.
+    formula: min(transaction_count * 10, 100)
+    range: [0, 100]
+
+  reviews:
+    description: Positive review ratio.
+    formula: >
+      if total_reviews > 0 then
+      (positive_reviews / total_reviews) * 100
+      else 0
+    range: [0, 100]
+
+  disputes:
+    description: Penalty for disputes and chargebacks.
+    formula: max(100 - dispute_count * 25, 0)
+    range: [0, 100]
+
+  role_specific:
+    description: Role-adjusted factor. Currently mirrors transactions.
+    range: [0, 100]
+
+fraud_penalties:
+  none: 0
+  low: 25
+  high: 50
+
+inactivity_decay:
+  enabled: true
+  description: >
+    Scores decay when a subject has been inactive for extended periods.
+  thresholds:
+    - days_inactive: 91
+      penalty: 10
+    - days_inactive: 181
+      penalty: 20
+    - days_inactive: 366
+      penalty: 30
+
+confidence:
+  base: 0.25
+  adjustments:
+    identity_verified: 0.30
+    verification_count_gt_0: 0.15
+    transaction_count_gte_5: 0.15
+    review_count_gte_3: 0.10
+  minimum: 0.10
+  maximum: 0.95
+
+score_bands:
+  high_trust:
+    min: 85
+    max: 100
+  good_standing:
+    min: 70
+    max: 84
+  fair:
+    min: 50
+    max: 69
+  low:
+    min: 30
+    max: 49
+  unscored:
+    min: 0
+    max: 29
+
+governance:
+  review_frequency: quarterly
+  approval_required_from:
+    - Risk Committee
+    - Compliance Officer
+    - Chief Technology Officer
+  change_control:
+    - Version increment required
+    - Peer review required
+    - Test suite must pass
+    - OpenAPI and public documentation updated if externally visible
