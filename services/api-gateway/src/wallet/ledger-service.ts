@@ -25,13 +25,13 @@ export type PostLedgerTransactionInput = {
   entries: LedgerPostingEntry[];
 };
 
-function assertPositiveAmount(amountCents: number): void {
+export function assertPositiveAmount(amountCents: number): void {
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
     throw new Error("Ledger entry amount must be a positive integer.");
   }
 }
 
-function assertBalancedEntries(entries: LedgerPostingEntry[]): void {
+export function assertBalancedEntries(entries: LedgerPostingEntry[]): void {
   if (entries.length < 2) {
     throw new Error("Ledger transaction requires at least two entries.");
   }
