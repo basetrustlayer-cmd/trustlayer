@@ -691,6 +691,11 @@ components:
           type: integer
 
     TrustScoreResponse:
+      oneOf:
+        - $ref: '#/components/schemas/SingleTrustScoreResponse'
+        - $ref: '#/components/schemas/AggregateTrustScoreResponse'
+
+    SingleTrustScoreResponse:
       type: object
       properties:
         subjectId:
@@ -701,8 +706,6 @@ components:
           type: integer
           minimum: 0
           maximum: 100
-        tier:
-          $ref: '#/components/schemas/ScoreBand'
         tierCeiling:
           type: integer
         confidence:
@@ -715,6 +718,32 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    AggregateTrustScoreResponse:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        composite:
+          type: integer
+          minimum: 0
+          maximum: 100
+        scores:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              score:
+                type: integer
+                minimum: 0
+                maximum: 100
+              tierCeiling:
+                type: integer
+              confidence:
+                type: number
+              updatedAt:
+                type: string
+                format: date-time
 
     ScoreHistoryResponse:
       type: object
