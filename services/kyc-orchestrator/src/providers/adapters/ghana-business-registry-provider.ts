@@ -4,6 +4,7 @@ import type {
   KycVerificationResult
 } from "../../types/index.js";
 import { KycProviderError } from "../../errors/provider-error.js";
+import { requireKycMockMode } from "../config.js";
 
 export class GhanaBusinessRegistryProvider implements KycProviderAdapter {
   code = "BUSINESS_REGISTRY" as const;
@@ -26,6 +27,8 @@ export class GhanaBusinessRegistryProvider implements KycProviderAdapter {
         this.code
       );
     }
+
+    requireKycMockMode("Ghana ORC");
 
     return {
       provider: this.code,

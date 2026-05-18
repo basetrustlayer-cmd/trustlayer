@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { KycProviderError } from "../../errors/provider-error";
 import { GhanaBusinessRegistryProvider } from "./ghana-business-registry-provider";
 
 describe("GhanaBusinessRegistryProvider", () => {
   const provider = new GhanaBusinessRegistryProvider();
+
+  afterEach(() => {
+    delete process.env.TRUSTLAYER_KYC_MOCK_MODE;
+  });
 
   it("supports GH business ORC verification", () => {
     expect(
@@ -38,7 +42,21 @@ describe("GhanaBusinessRegistryProvider", () => {
     ).rejects.toBeInstanceOf(KycProviderError);
   });
 
-  it("returns verified mock ORC result when registration number exists", async () => {
+  it("fails closed when mock mode is disabled", async () => {
+    await expect(
+      provider.verify({
+        subjectId: "subject_1",
+        subjectType: "BUSINESS",
+        method: "BUSINESS_ORC",
+        country: "GH",
+        businessRegistrationNumber: "CS123456789"
+      })
+    ).rejects.toThrow("mock verification is disabled");
+  });
+
+  it("returns verified mock ORC result only when mock mode is enabled", async () => {
+    process.env.TRUSTLAYER_KYC_MOCK_MODE = "true";
+
     const result = await provider.verify({
       subjectId: "subject_1",
       subjectType: "BUSINESS",
