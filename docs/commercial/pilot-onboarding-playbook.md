@@ -15,12 +15,15 @@ Help the first pilot customer integrate TrustLayer in a controlled sandbox-to-pr
 
 ### Week 1: Discovery and Sandbox Setup
 
+- Review the [Render case study](./render-case-study.md) — understand the
+  projection-only boundary model, SLO commitments, and SafeDeal flow as a
+  reference integration before beginning your own.
 - Confirm use case
 - Identify subject types: buyer, seller, vendor, worker, business, platform
 - Create sandbox organization
 - Create API key
 - Load sandbox data
-- Review API docs
+- Review API docs at `/api-docs` (Scalar interactive reference, sandbox key pre-populated)
 
 ### Week 2: Technical Integration
 
