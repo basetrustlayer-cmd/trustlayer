@@ -638,10 +638,12 @@ app.post("/v1/verify/confirm", async (request, reply) => {
 
 import { sweepExpiredSessions } from "./kyc/sweep.js";
 import { widgetRoutes } from "./routes/widget.js";
+import { governanceRoutes } from "./routes/governance.js";
 
 const adminScopeSchema = z.object({ scope: z.literal("admin") }).passthrough();
 
 app.register(widgetRoutes);
+app.register(governanceRoutes);
 
 app.post("/v1/admin/kyc/expire-sessions", async (request, reply) => {
   const authHeader = request.headers["x-admin-scope"];
