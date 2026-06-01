@@ -18,7 +18,8 @@
   "pnpm": {
     "overrides": {
       "handlebars": ">=4.7.9",
-      "tar": ">=7.5.11"
+      "tar": ">=7.5.11",
+      "postcss": ">=8.5.10"
     }
   },
   "devDependencies": {
