@@ -261,7 +261,9 @@ export function computeNextSteps(input: ComputeNextStepsInput): NextStep[] {
 
   if (input.verificationTier === "UNVERIFIED" && !input.hasVerificationSessions) {
     steps.push({ action: "complete_ghana_card_verification", impact: "HIGH", description: "Complete Ghana Card verification" });
-  } else if (input.identityFactor < 50) {
+  }
+
+  if (input.identityFactor < 50) {
     steps.push({ action: "verify_identity", impact: "HIGH", description: "Verify your identity to build trust" });
   }
 
