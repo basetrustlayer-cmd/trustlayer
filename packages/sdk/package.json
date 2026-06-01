@@ -1,0 +1,28 @@
+{
+  "name": "@trustlayer/sdk",
+  "version": "0.1.0",
+  "description": "Official TrustLayer TypeScript SDK — generated from OpenAPI lock",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.0"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.76.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.6"
+  }
+}

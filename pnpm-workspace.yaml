@@ -1,4 +1,5 @@
 packages:
+  - packages/sdk
   - "apps/*"
   - "services/*"
   - "packages/*"
