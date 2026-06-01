@@ -304,7 +304,55 @@ async function main() {
     });
   }
 
+  // Slice 15: escrow hold, completed release, resolved dispute
+  const buyerSubjectId = subjects[0];
+  const sellerSubjectId = subjects[2];
+
+  await prisma.escrowHold.upsert({
+    where: { reference: "sandbox-escrow-held-001" },
+    update: { status: "HELD" },
+    create: {
+      buyerSubjectId,
+      sellerSubjectId,
+      amountCents: 25000,
+      currency: "GHS",
+      status: "HELD",
+      reference: "sandbox-escrow-held-001",
+      metadata: { sandbox: true, description: "SafeDeal demo hold" }
+    }
+  });
+
+  await prisma.escrowHold.upsert({
+    where: { reference: "sandbox-escrow-released-001" },
+    update: { status: "RELEASED", releasedAt: now },
+    create: {
+      buyerSubjectId: subjects[4],
+      sellerSubjectId: subjects[6],
+      amountCents: 15000,
+      currency: "GHS",
+      status: "RELEASED",
+      reference: "sandbox-escrow-released-001",
+      releasedAt: now,
+      metadata: { sandbox: true, description: "Completed SafeDeal release" }
+    }
+  });
+
+  await prisma.dispute.create({
+    data: {
+      filerSubjectId: buyerSubjectId,
+      respondentSubjectId: sellerSubjectId,
+      filerRole: "buyer",
+      respondentRole: "seller",
+      status: "RESOLVED",
+      faultParty: "seller",
+      reason: "Item not delivered as described",
+      resolution: "Full refund issued to buyer",
+      metadata: { sandbox: true, resolvedAt: now.toISOString() }
+    }
+  });
+
   console.log(`Seeded ${subjects.length} subjects across ${tiers.length} tiers.`);
+  console.log("Seeded 1 escrow hold, 1 released escrow, 1 resolved dispute.");
   console.log("Sandbox seed complete.");
 }
 
