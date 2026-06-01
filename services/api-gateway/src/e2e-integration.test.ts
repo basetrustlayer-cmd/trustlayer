@@ -250,6 +250,8 @@ describe("TrustLayer end-to-end service flow", () => {
         tier: "high_trust",
         tierCeiling: 100,
         confidence: 0.95,
+        verificationTier: "ENHANCED",
+        consumerTier: "TRUSTED",
         factors: {
           identity: 100,
           transactions: 100,
@@ -265,6 +267,8 @@ describe("TrustLayer end-to-end service flow", () => {
         tier: "good_standing",
         tierCeiling: 100,
         confidence: 0.9,
+        verificationTier: "ENHANCED",
+        consumerTier: "TRUSTED",
         factors: {
           identity: 100,
           transactions: 80,

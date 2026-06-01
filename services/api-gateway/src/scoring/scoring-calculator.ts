@@ -38,6 +38,8 @@ export type TrustScoreCalculationInput = {
   reason?: string;
 };
 
+export type ConsumerTier = "NEW" | "BUILDING" | "VERIFIED" | "TRUSTED";
+
 export type TrustScoreCalculationResult = {
   subjectId: string;
   role: ScoreRole;
@@ -46,6 +48,8 @@ export type TrustScoreCalculationResult = {
   tierCeiling: number;
   confidence: number;
   factors: TrustScoreFactors;
+  verificationTier: VerificationTier;
+  consumerTier: ConsumerTier;
 };
 
 function clamp(value: number, min = 0, max = 100): number {
@@ -71,6 +75,30 @@ function getTrustScoreBand(score: number): string {
   if (score >= 50) return "fair";
   if (score >= 30) return "low";
   return "unscored";
+}
+
+export function mapToConsumerTier(verificationTier: VerificationTier, scoreBand: string): ConsumerTier {
+  if (verificationTier === "ENHANCED") {
+    return "TRUSTED";
+  }
+
+  if (verificationTier === "BUSINESS" || verificationTier === "INDIVIDUAL") {
+    return "VERIFIED";
+  }
+
+  if (verificationTier === "UNVERIFIED") {
+    if (scoreBand === "unscored") {
+      return "NEW";
+    }
+    if (scoreBand === "low" || scoreBand === "fair") {
+      return "BUILDING";
+    }
+    if (scoreBand === "good_standing" || scoreBand === "high_trust") {
+      return "VERIFIED";
+    }
+  }
+
+  return "NEW";
 }
 
 function calculateConfidence(input: TrustScoreCalculationInput): number {
@@ -175,12 +203,14 @@ export function calculateTrustScoreForPersistence(
   );
 
   const score = Math.min(rawScore, tierCeiling);
+  const tier = getTrustScoreBand(score);
+  const consumerTier = mapToConsumerTier(verificationTier, tier);
 
   return {
     subjectId: input.subjectId,
     role,
     score,
-    tier: getTrustScoreBand(score),
+    tier,
     tierCeiling,
     confidence: calculateConfidence(input),
     factors: {
@@ -189,6 +219,8 @@ export function calculateTrustScoreForPersistence(
       reviews: Math.round(reviews),
       disputes: Math.round(disputes),
       roleSpecific: Math.round(roleSpecific)
-    }
+    },
+    verificationTier,
+    consumerTier
   };
 }

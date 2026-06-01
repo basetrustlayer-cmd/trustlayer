@@ -1,5 +1,70 @@
 
-
-> @trustlayer/api-gateway@0.1.0 typecheck /Users/nanaakua/Projects/trustlayer/services/api-gateway
+> @trustlayer/api-gateway@0.1.0 typecheck /workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/services/api-gateway
 > tsc --noEmit
 
+src/billing/providers/hubtel-provider.ts(4,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'PaymentProvider'.
+src/billing/providers/hubtel-provider.ts(5,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'SubscriptionStatus'.
+src/billing/providers/stripe-provider.ts(4,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'InvoiceStatus'.
+src/billing/providers/stripe-provider.ts(5,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'PaymentProvider'.
+src/billing/providers/stripe-provider.ts(6,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'PaymentStatus'.
+src/billing/providers/stripe-provider.ts(7,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'SubscriptionStatus'.
+src/disputes/dispute-service.ts(31,37): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'JsonValue'.
+src/disputes/dispute-service.ts(73,19): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/disputes/dispute-service.ts(110,19): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/disputes/dispute-service.ts(167,19): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/e2e-integration.test.ts(246,30): error TS2345: Argument of type '{ subjectId: string; role: "seller"; score: number; tier: string; tierCeiling: number; confidence: number; factors: { identity: number; transactions: number; reviews: number; disputes: number; roleSpecific: number; }; }' is not assignable to parameter of type 'TrustScoreCalculationResult'.
+  Type '{ subjectId: string; role: "seller"; score: number; tier: string; tierCeiling: number; confidence: number; factors: { identity: number; transactions: number; reviews: number; disputes: number; roleSpecific: number; }; }' is missing the following properties from type 'TrustScoreCalculationResult': verificationTier, consumerTier
+src/e2e-integration.test.ts(261,30): error TS2345: Argument of type '{ subjectId: string; role: "buyer"; score: number; tier: string; tierCeiling: number; confidence: number; factors: { identity: number; transactions: number; reviews: number; disputes: number; roleSpecific: number; }; }' is not assignable to parameter of type 'TrustScoreCalculationResult'.
+  Type '{ subjectId: string; role: "buyer"; score: number; tier: string; tierCeiling: number; confidence: number; factors: { identity: number; transactions: number; reviews: number; disputes: number; roleSpecific: number; }; }' is missing the following properties from type 'TrustScoreCalculationResult': verificationTier, consumerTier
+src/escrow/escrow-service.ts(63,42): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/events/event-consumer.ts(59,31): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/events/event-consumer.ts(63,52): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/fraud-alerts/fraud-alert-service.ts(18,42): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/index.ts(31,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'IdentityVerificationStatus'.
+src/index.ts(32,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'SubjectType'.
+src/index.ts(33,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'VerificationMethod'.
+src/index.ts(158,5): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/index.ts(160,5): error TS2322: Type 'unknown' is not assignable to type 'KycVerificationMethod'.
+src/index.ts(161,5): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/index.ts(162,5): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/index.ts(163,5): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/index.ts(164,5): error TS2322: Type 'unknown' is not assignable to type 'string | undefined'.
+src/index.ts(207,28): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(208,33): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(209,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(238,33): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(239,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(241,9): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string | null | undefined'.
+src/index.ts(438,20): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/index.ts(438,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/index.ts(450,17): error TS7006: Parameter 'score' implicitly has an 'any' type.
+src/notifications/notification-service.ts(75,41): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/notifications/notification-service.ts(76,26): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/routes/api-keys.ts(4,18): error TS2305: Module '"@trustlayer/database"' has no exported member 'ApiKeyEnvironment'.
+src/routes/api-keys.ts(91,22): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+src/routes/api-keys.ts(128,29): error TS7006: Parameter 'apiKey' implicitly has an 'any' type.
+src/routes/billing.ts(5,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'BillingInterval'.
+src/routes/billing.ts(6,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'PaymentProvider'.
+src/routes/billing.ts(7,3): error TS2305: Module '"@trustlayer/database"' has no exported member 'SubscriptionStatus'.
+src/routes/billing.ts(71,7): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
+src/routes/billing.ts(71,48): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+src/routes/billing.ts(78,17): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
+src/routes/events.ts(45,27): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/routes/fraud-alerts.ts(32,27): error TS7006: Parameter 'alert' implicitly has an 'any' type.
+src/routes/leaderboard.ts(34,32): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/routes/leaderboard.ts(34,39): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/routes/score-history.ts(36,29): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/routes/stripe.ts(9,18): error TS2305: Module '"@trustlayer/database"' has no exported member 'PaymentProvider'.
+src/scoring/scoring-service.ts(18,34): error TS7006: Parameter 'verification' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(115,42): error TS2694: Namespace '"/workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+src/wallet/ledger-service.ts(144,14): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(145,14): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(145,19): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(147,14): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(148,14): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/wallet/ledger-service.ts(148,19): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+ ELIFECYCLE  Command failed with exit code 2.
