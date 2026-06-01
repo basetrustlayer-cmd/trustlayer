@@ -636,17 +636,7 @@ app.post("/v1/verify/confirm", async (request, reply) => {
 
 // ── Slice 09: Session expiry sweep ────────────────────────────────────────────
 
-async function sweepExpiredSessions(): Promise<number> {
-  const now = new Date();
-  const result = await prisma.verificationSession.updateMany({
-    where: {
-      status: "OTP_SENT",
-      expiresAt: { lt: now }
-    },
-    data: { status: "EXPIRED" }
-  });
-  return result.count;
-}
+import { sweepExpiredSessions } from "./kyc/sweep.js";
 
 const adminScopeSchema = z.object({ scope: z.literal("admin") }).passthrough();
 
