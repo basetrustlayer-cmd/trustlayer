@@ -18,65 +18,119 @@ export function getProjectionTtl(tier: VerificationTier): number {
 }
 export type NextStep = {
   action: string;
-  reason: string;
-  priority: "high" | "medium" | "low";
+  description: string;
+  impact: "HIGH" | "MEDIUM" | "LOW";
 };
 
+export interface ComputeNextStepsInput {
+  verificationTier: VerificationTier;
+  identityFactor: number;
+  transactionCount: number;
+  reviewCount: number;
+  disputeCount: number;
+  hasVerificationSessions: boolean;
+  lastActivityAt?: Date | string | null;
+}
+
+export function computeNextSteps(input: ComputeNextStepsInput): NextStep[] {
+  const steps: NextStep[] = [];
+
+  const {
+    verificationTier,
+    identityFactor,
+    transactionCount,
+    reviewCount,
+    disputeCount,
+    hasVerificationSessions,
+    lastActivityAt
+  } = input;
+
+  // Check for disputes (HIGH impact)
+  if (disputeCount > 0) {
+    steps.push({
+      action: "resolve_disputes",
+      description: "Resolve open disputes to improve your trust score",
+      impact: "HIGH"
+    });
+  }
+
+  // Check for unverified status with no sessions
+  if (verificationTier === "UNVERIFIED" && !hasVerificationSessions) {
+    steps.push({
+      action: "complete_ghana_card_verification",
+      description: "Complete Ghana Card verification to unlock higher trust ceiling",
+      impact: "HIGH"
+    });
+  }
+
+  // Check identity factor
+  if (identityFactor < 50) {
+    steps.push({
+      action: "verify_identity",
+      description: "Verify your identity to strengthen your trust profile",
+      impact: "HIGH"
+    });
+  }
+
+  // Check transaction count
+  if (transactionCount < 5) {
+    steps.push({
+      action: "complete_transactions",
+      description: "Complete at least 5 transactions to build transaction history",
+      impact: "MEDIUM"
+    });
+  }
+
+  // Check reviews
+  if (reviewCount === 0) {
+    steps.push({
+      action: "request_review",
+      description: "Request a review from your counterparties to build reputation",
+      impact: "MEDIUM"
+    });
+  }
+
+  // Check for inactivity (requires lastActivityAt from Slice 06)
+  if (lastActivityAt) {
+    const activityDate =
+      lastActivityAt instanceof Date
+        ? lastActivityAt
+        : new Date(lastActivityAt);
+
+    if (!Number.isNaN(activityDate.getTime())) {
+      const daysInactive =
+        (Date.now() - activityDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysInactive > 90) {
+        steps.push({
+          action: "increase_activity",
+          description: "Activity required to prevent score decay",
+          impact: "MEDIUM"
+        });
+      }
+    }
+  }
+
+  // Sort by impact: HIGH first, then MEDIUM, then LOW
+  const impactOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+  steps.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]);
+
+  return steps;
+}
+
+// Legacy function kept for backward compatibility
 export function getNextSteps(
   verificationTier: VerificationTier,
   score: number
 ): NextStep[] {
-  const steps: NextStep[] = [];
-
-  if (verificationTier === "UNVERIFIED") {
-    steps.push({
-      action: "verify_identity",
-      reason: "Verify your identity with Ghana Card to unlock a higher trust ceiling and reach VERIFIED status.",
-      priority: "high"
-    });
-  }
-
-  if (verificationTier === "INDIVIDUAL") {
-    steps.push({
-      action: "register_business",
-      reason: "Register your business via ORC to raise your trust ceiling to 85 and reach TRUSTED status.",
-      priority: "medium"
-    });
-  }
-
-  if (verificationTier === "BUSINESS") {
-    steps.push({
-      action: "link_financial_account",
-      reason: "Link a verified financial account to reach ENHANCED tier and unlock a trust ceiling of 100.",
-      priority: "medium"
-    });
-  }
-
-  if (score < 50) {
-    steps.push({
-      action: "complete_transactions",
-      reason: "Complete more transactions to build a stronger trust signal.",
-      priority: "high"
-    });
-  }
-
-  if (score >= 50 && score < 70) {
-    steps.push({
-      action: "collect_reviews",
-      reason: "Request reviews from your counterparties to move into good standing.",
-      priority: "medium"
-    });
-  }
-
-  if (score >= 70) {
-    steps.push({
-      action: "maintain_activity",
-      reason: "Stay active to prevent inactivity decay and maintain your current score.",
-      priority: "low"
-    });
-  }
-
-  return steps;
+  return computeNextSteps({
+    verificationTier,
+    identityFactor: score < 50 ? 25 : 75,
+    transactionCount: Math.max(1, Math.floor(score / 20)),
+    reviewCount: score > 50 ? 1 : 0,
+    disputeCount: 0,
+    hasVerificationSessions: verificationTier !== "UNVERIFIED"
+  });
 }
 
 

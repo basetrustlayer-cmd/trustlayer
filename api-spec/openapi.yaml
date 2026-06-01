@@ -738,6 +738,23 @@ components:
         roleSpecific:
           type: integer
 
+    NextStep:
+      type: object
+      properties:
+        action:
+          type: string
+          description: The action identifier (e.g., 'verify_identity', 'complete_transactions')
+        description:
+          type: string
+          description: Human-readable description of the action
+        impact:
+          type: string
+          enum:
+            - HIGH
+            - MEDIUM
+            - LOW
+          description: Impact level of the action on trust score
+
     TrustScoreResponse:
       oneOf:
         - $ref: '#/components/schemas/SingleTrustScoreResponse'
@@ -762,6 +779,11 @@ components:
           $ref: '#/components/schemas/VerificationTier'
         consumerTier:
           $ref: '#/components/schemas/ConsumerTier'
+        nextSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/NextStep'
+          description: Sorted by impact (HIGH first)
         factors:
           $ref: '#/components/schemas/TrustScoreFactors'
         createdAt:
@@ -784,6 +806,11 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+        nextSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/NextStep'
+          description: Sorted by impact (HIGH first)
         scores:
           type: object
           additionalProperties:
