@@ -66,12 +66,12 @@ function calculateConfidence(input: TrustScoreInput) {
   return Number(clamp(confidence, 0.1, 0.95).toFixed(2));
 }
 
-export function getTrustScoreBand(score: number) {
-  if (score >= 85) return "excellent";
+export function getTrustScoreBand(score: number): string {
+  if (score >= 85) return "high_trust";
   if (score >= 70) return "good_standing";
-  if (score >= 50) return "developing";
-  if (score >= 30) return "limited";
-  return "insufficient_data";
+  if (score >= 50) return "fair";
+  if (score >= 30) return "low";
+  return "unscored";
 }
 
 export function calculateTrustScoreDetailed(
