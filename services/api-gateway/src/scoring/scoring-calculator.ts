@@ -18,7 +18,6 @@ export function getProjectionTtl(tier: VerificationTier): number {
 }
 export type NextStep = {
   action: string;
-<<<<<<< HEAD
   description: string;
   impact: "HIGH" | "MEDIUM" | "LOW";
 };
@@ -120,17 +119,10 @@ export function computeNextSteps(input: ComputeNextStepsInput): NextStep[] {
 }
 
 // Legacy function kept for backward compatibility
-=======
-  reason: string;
-  priority: "high" | "medium" | "low";
-};
-
->>>>>>> origin/main
 export function getNextSteps(
   verificationTier: VerificationTier,
   score: number
 ): NextStep[] {
-<<<<<<< HEAD
   return computeNextSteps({
     verificationTier,
     identityFactor: score < 50 ? 25 : 75,
@@ -139,59 +131,6 @@ export function getNextSteps(
     disputeCount: 0,
     hasVerificationSessions: verificationTier !== "UNVERIFIED"
   });
-=======
-  const steps: NextStep[] = [];
-
-  if (verificationTier === "UNVERIFIED") {
-    steps.push({
-      action: "verify_identity",
-      reason: "Verify your identity with Ghana Card to unlock a higher trust ceiling and reach VERIFIED status.",
-      priority: "high"
-    });
-  }
-
-  if (verificationTier === "INDIVIDUAL") {
-    steps.push({
-      action: "register_business",
-      reason: "Register your business via ORC to raise your trust ceiling to 85 and reach TRUSTED status.",
-      priority: "medium"
-    });
-  }
-
-  if (verificationTier === "BUSINESS") {
-    steps.push({
-      action: "link_financial_account",
-      reason: "Link a verified financial account to reach ENHANCED tier and unlock a trust ceiling of 100.",
-      priority: "medium"
-    });
-  }
-
-  if (score < 50) {
-    steps.push({
-      action: "complete_transactions",
-      reason: "Complete more transactions to build a stronger trust signal.",
-      priority: "high"
-    });
-  }
-
-  if (score >= 50 && score < 70) {
-    steps.push({
-      action: "collect_reviews",
-      reason: "Request reviews from your counterparties to move into good standing.",
-      priority: "medium"
-    });
-  }
-
-  if (score >= 70) {
-    steps.push({
-      action: "maintain_activity",
-      reason: "Stay active to prevent inactivity decay and maintain your current score.",
-      priority: "low"
-    });
-  }
-
-  return steps;
->>>>>>> origin/main
 }
 
 
