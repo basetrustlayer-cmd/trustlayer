@@ -8,3 +8,16 @@ export type Organization = {
   name: string;
   createdAt: string;
 };
+
+export type ScoreBand =
+  | "high_trust"
+  | "good_standing"
+  | "fair"
+  | "low"
+  | "unscored";
+
+export type ConsumerTier =
+  | "NEW"
+  | "BUILDING"
+  | "VERIFIED"
+  | "TRUSTED";
