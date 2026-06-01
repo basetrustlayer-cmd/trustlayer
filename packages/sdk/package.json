@@ -24,10 +24,5 @@
     "@hey-api/openapi-ts": "^0.76.0",
     "typescript": "^5.4.0",
     "vitest": "^4.1.6"
-  },
-  "pnpm": {
-    "overrides": {
-      "handlebars": ">=4.7.9"
-    }
   }
 }
