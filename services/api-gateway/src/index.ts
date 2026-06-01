@@ -633,3 +633,31 @@ app.post("/v1/verify/confirm", async (request, reply) => {
     score
   });
 });
+
+// ── Slice 09: Session expiry sweep ────────────────────────────────────────────
+
+async function sweepExpiredSessions(): Promise<number> {
+  const now = new Date();
+  const result = await prisma.verificationSession.updateMany({
+    where: {
+      status: "OTP_SENT",
+      expiresAt: { lt: now }
+    },
+    data: { status: "EXPIRED" }
+  });
+  return result.count;
+}
+
+const adminScopeSchema = z.object({ scope: z.literal("admin") }).passthrough();
+
+app.post("/v1/admin/kyc/expire-sessions", async (request, reply) => {
+  const authHeader = request.headers["x-admin-scope"];
+  if (authHeader !== "admin") {
+    return reply.status(403).send({ error: "Admin scope required" });
+  }
+  const expired = await sweepExpiredSessions();
+  return reply.status(200).send({
+    swept: expired,
+    timestamp: new Date().toISOString()
+  });
+});

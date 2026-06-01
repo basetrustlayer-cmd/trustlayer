@@ -413,3 +413,41 @@ it("runs complete escrow lifecycle from hold to release with fee split", async (
   ]);
 });
 
+
+// ── Slice 09: sweepExpiredSessions unit tests ─────────────────────────────────
+describe("sweepExpiredSessions", () => {
+  it("expires sessions where expiresAt is in the past", async () => {
+    await prisma.verificationSession.create({
+      data: {
+        id: "sess-expired-001",
+        subjectId: "sub-test-001",
+        status: "OTP_SENT",
+        expiresAt: new Date(Date.now() - 5 * 60 * 1000), // 5 min ago
+        otpCode: "123456"
+      }
+    });
+    const count = await sweepExpiredSessions();
+    expect(count).toBeGreaterThanOrEqual(1);
+    const session = await prisma.verificationSession.findUnique({
+      where: { id: "sess-expired-001" }
+    });
+    expect(session?.status).toBe("EXPIRED");
+  });
+
+  it("does not touch sessions where expiresAt is in the future", async () => {
+    await prisma.verificationSession.create({
+      data: {
+        id: "sess-active-001",
+        subjectId: "sub-test-002",
+        status: "OTP_SENT",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min from now
+        otpCode: "654321"
+      }
+    });
+    await sweepExpiredSessions();
+    const session = await prisma.verificationSession.findUnique({
+      where: { id: "sess-active-001" }
+    });
+    expect(session?.status).toBe("OTP_SENT");
+  });
+});

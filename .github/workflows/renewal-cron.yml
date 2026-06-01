@@ -13,3 +13,16 @@ jobs:
         run: |
           curl -fsS -X POST "${{ secrets.TRUSTLAYER_APP_URL }}/api/cron/certification/renewal-notifications" \
             -H "Authorization: Bearer ${{ secrets.TRUSTLAYER_CRON_SECRET }}"
+
+  kyc-session-expiry-sweep:
+    name: KYC Session Expiry Sweep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger expire-sessions endpoint
+        run: |
+          curl -s -X POST "${{ secrets.API_BASE_URL }}/v1/admin/kyc/expire-sessions" \
+            -H "x-admin-scope: admin" \
+            -H "Content-Type: application/json" \
+            --fail-with-body
+    schedule:
+      - cron: "*/15 * * * *"
