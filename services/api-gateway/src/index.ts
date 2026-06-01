@@ -20,6 +20,7 @@ import { registerDisputeResolutionRoutes } from "./routes/dispute-resolution.js"
 import { registerNotificationRoutes } from "./routes/notifications.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
+import { mapToConsumerTier, type ConsumerTier } from "./scoring/scoring-calculator.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { startTrustLayerEventConsumer } from "./events/event-consumer.js";
 import { startWebhookRetryEngine } from "./webhooks/retry-engine.js";
@@ -283,6 +284,7 @@ app.post("/v1/verify", async (request, reply) => {
     tierBefore,
     tier: verificationTier,
     tierAfter,
+    consumerTier: score.consumerTier,
     expiresAt: verification.expiresAt?.toISOString() ?? null,
     score
   });
@@ -302,22 +304,47 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
   });
 
   if (!subject) {
+    const consumerTier = mapToConsumerTier("UNVERIFIED", "unscored");
     return reply.status(200).send({
       subjectId: params.subjectId,
       tier: "UNVERIFIED",
       confidence: 0.1,
       tierCeiling: TIER_CEILINGS.UNVERIFIED,
+      verificationTier: "UNVERIFIED",
+      consumerTier,
       tierUpdatedAt: null
     });
   }
 
   const storedTier = normalizeStoredTier(subject.verificationTier);
+  const tierCeiling = TIER_CEILINGS[storedTier];
+  
+  const trustScore = await prisma.trustScore.findUnique({
+    where: {
+      subjectId_role: {
+        subjectId: subject.id,
+        role: "platform"
+      }
+    }
+  });
+
+  let scoreBand = "unscored";
+  if (trustScore) {
+    if (trustScore.score >= 85) scoreBand = "high_trust";
+    else if (trustScore.score >= 70) scoreBand = "good_standing";
+    else if (trustScore.score >= 50) scoreBand = "fair";
+    else if (trustScore.score >= 30) scoreBand = "low";
+  }
+
+  const consumerTier = mapToConsumerTier(storedTier, scoreBand);
 
   return reply.status(200).send({
     subjectId: subject.id,
     tier: storedTier,
     confidence: storedTier === "UNVERIFIED" ? 0.1 : 0.75,
-    tierCeiling: TIER_CEILINGS[storedTier],
+    tierCeiling,
+    verificationTier: storedTier,
+    consumerTier,
     tierUpdatedAt: subject.tierUpdatedAt?.toISOString() ?? null
   });
 });
@@ -334,6 +361,16 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
       role: scoreRoleSchema.optional()
     })
     .parse(request.query);
+
+  const subject = await prisma.subject.findUnique({
+    where: {
+      id: params.subjectId
+    }
+  });
+
+  const verificationTier = subject
+    ? normalizeStoredTier(subject.verificationTier)
+    : "UNVERIFIED";
 
   if (query.role) {
     const score = await prisma.trustScore.findUnique({
@@ -353,12 +390,22 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
       });
     }
 
+    let scoreBand = "unscored";
+    if (score.score >= 85) scoreBand = "high_trust";
+    else if (score.score >= 70) scoreBand = "good_standing";
+    else if (score.score >= 50) scoreBand = "fair";
+    else if (score.score >= 30) scoreBand = "low";
+
+    const consumerTier = mapToConsumerTier(verificationTier, scoreBand);
+
     return reply.status(200).send({
       subjectId: score.subjectId,
       role: score.role as ScoreRole,
       score: score.score,
       tierCeiling: score.tierCeiling,
       confidence: score.confidence,
+      verificationTier,
+      consumerTier,
       factors: {
         identity: score.factorIdentity,
         transactions: score.factorTransactions,
@@ -391,20 +438,41 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
     scores.reduce((sum, item) => sum + item.score, 0) / scores.length
   );
 
+  let compositeBand = "unscored";
+  if (composite >= 85) compositeBand = "high_trust";
+  else if (composite >= 70) compositeBand = "good_standing";
+  else if (composite >= 50) compositeBand = "fair";
+  else if (composite >= 30) compositeBand = "low";
+
+  const compositeConsumerTier = mapToConsumerTier(verificationTier, compositeBand);
+
   const scoresByRole = Object.fromEntries(
-    scores.map((score) => [
-      score.role,
-      {
-        score: score.score,
-        tierCeiling: score.tierCeiling,
-        confidence: score.confidence,
-        updatedAt: score.updatedAt.toISOString()
-      }
-    ])
+    scores.map((score) => {
+      let scoreBand = "unscored";
+      if (score.score >= 85) scoreBand = "high_trust";
+      else if (score.score >= 70) scoreBand = "good_standing";
+      else if (score.score >= 50) scoreBand = "fair";
+      else if (score.score >= 30) scoreBand = "low";
+
+      const consumerTier = mapToConsumerTier(verificationTier, scoreBand);
+
+      return [
+        score.role,
+        {
+          score: score.score,
+          tierCeiling: score.tierCeiling,
+          confidence: score.confidence,
+          consumerTier,
+          updatedAt: score.updatedAt.toISOString()
+        }
+      ];
+    })
   );
 
   return reply.status(200).send({
     subjectId: params.subjectId,
+    verificationTier,
+    consumerTier: compositeConsumerTier,
     composite,
     scores: scoresByRole
   });

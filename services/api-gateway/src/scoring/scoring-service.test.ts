@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateTrustScoreForPersistence } from "./scoring-calculator.js";
+import { calculateTrustScoreForPersistence, mapToConsumerTier } from "./scoring-calculator.js";
 
 describe("calculateTrustScoreForPersistence", () => {
   it("defaults unknown tiers to UNVERIFIED ceiling of 30", () => {
@@ -173,4 +173,60 @@ it("caps inactivity penalty at 30 after one year", () => {
   });
 
   expect(active.score - stale.score).toBe(30);
+});
+
+describe("mapToConsumerTier", () => {
+  it("maps ENHANCED tier to TRUSTED", () => {
+    expect(mapToConsumerTier("ENHANCED", "high_trust")).toBe("TRUSTED");
+    expect(mapToConsumerTier("ENHANCED", "unscored")).toBe("TRUSTED");
+  });
+
+  it("maps BUSINESS tier to VERIFIED", () => {
+    expect(mapToConsumerTier("BUSINESS", "high_trust")).toBe("VERIFIED");
+    expect(mapToConsumerTier("BUSINESS", "unscored")).toBe("VERIFIED");
+  });
+
+  it("maps INDIVIDUAL tier to VERIFIED", () => {
+    expect(mapToConsumerTier("INDIVIDUAL", "high_trust")).toBe("VERIFIED");
+    expect(mapToConsumerTier("INDIVIDUAL", "unscored")).toBe("VERIFIED");
+  });
+
+  it("maps UNVERIFIED + unscored to NEW", () => {
+    expect(mapToConsumerTier("UNVERIFIED", "unscored")).toBe("NEW");
+  });
+
+  it("maps UNVERIFIED + low/fair to BUILDING", () => {
+    expect(mapToConsumerTier("UNVERIFIED", "low")).toBe("BUILDING");
+    expect(mapToConsumerTier("UNVERIFIED", "fair")).toBe("BUILDING");
+  });
+
+  it("maps UNVERIFIED + good_standing/high_trust to VERIFIED", () => {
+    expect(mapToConsumerTier("UNVERIFIED", "good_standing")).toBe("VERIFIED");
+    expect(mapToConsumerTier("UNVERIFIED", "high_trust")).toBe("VERIFIED");
+  });
+});
+
+describe("consumerTier in calculateTrustScoreForPersistence", () => {
+  it("includes consumerTier and verificationTier in result", () => {
+    const result = calculateTrustScoreForPersistence({
+      subjectId: "subject_1",
+      verificationTier: "ENHANCED"
+    });
+
+    expect(result.verificationTier).toBe("ENHANCED");
+    expect(result.consumerTier).toBe("TRUSTED");
+  });
+
+  it("calculates consumerTier based on score band and verification tier", () => {
+    const result = calculateTrustScoreForPersistence({
+      subjectId: "subject_1",
+      identityVerified: true,
+      transactionCount: 50,
+      positiveReviewCount: 10,
+      negativeReviewCount: 0,
+      verificationTier: "BUSINESS"
+    });
+
+    expect(result.consumerTier).toBe("VERIFIED");
+  });
 });

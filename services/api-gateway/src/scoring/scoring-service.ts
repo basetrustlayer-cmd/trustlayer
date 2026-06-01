@@ -3,9 +3,9 @@ import { createFraudGraphServiceFromEnv } from "@trustlayer/fraud-graph";
 import { publishTrustLayerEvent } from "../events/event-publisher.js";
 import { createHighRiskTrustScoreAlert } from "../fraud-alerts/fraud-alert-service.js";
 
-export { calculateTrustScoreForPersistence } from "./scoring-calculator.js";
-export type { ScoreRole, TrustScoreCalculationInput, TrustScoreCalculationResult } from "./scoring-calculator.js";
-import { calculateTrustScoreForPersistence, type ScoreRole, type TrustScoreCalculationInput, type TrustScoreCalculationResult } from "./scoring-calculator.js";
+export { calculateTrustScoreForPersistence, mapToConsumerTier } from "./scoring-calculator.js";
+export type { ScoreRole, TrustScoreCalculationInput, TrustScoreCalculationResult, ConsumerTier } from "./scoring-calculator.js";
+import { calculateTrustScoreForPersistence, mapToConsumerTier, type ScoreRole, type TrustScoreCalculationInput, type TrustScoreCalculationResult, type ConsumerTier } from "./scoring-calculator.js";
 
 async function getSubjectVerificationFacts(subjectId: string) {
   const subject = await prisma.subject.findUnique({
@@ -161,7 +161,10 @@ export async function upsertTrustScore(
       subjectId: result.subjectId,
       role: result.role,
       score: result.score,
+      tier: result.tier,
       tierCeiling: result.tierCeiling,
+      verificationTier: result.verificationTier,
+      consumerTier: result.consumerTier,
       confidence: result.confidence,
       factors: result.factors,
       reason: input.reason ?? "score.updated"

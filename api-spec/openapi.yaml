@@ -670,6 +670,10 @@ components:
       type: string
       enum: [high_trust, good_standing, fair, low, unscored]
 
+    ConsumerTier:
+      type: string
+      enum: [NEW, BUILDING, VERIFIED, TRUSTED]
+
     VerifyRequest:
       type: object
       required: [subjectId, method]
@@ -694,6 +698,8 @@ components:
           enum: [PENDING, OTP_SENT, VERIFIED, FAILED, EXPIRED]
         tier:
           $ref: '#/components/schemas/VerificationTier'
+        consumerTier:
+          $ref: '#/components/schemas/ConsumerTier'
         score:
           $ref: '#/components/schemas/TrustScoreResponse'
 
@@ -702,6 +708,10 @@ components:
       properties:
         subjectId:
           type: string
+        verificationTier:
+          $ref: '#/components/schemas/VerificationTier'
+        consumerTier:
+          $ref: '#/components/schemas/ConsumerTier'
         tier:
           $ref: '#/components/schemas/VerificationTier'
         confidence:
@@ -748,6 +758,10 @@ components:
           type: integer
         confidence:
           type: number
+        verificationTier:
+          $ref: '#/components/schemas/VerificationTier'
+        consumerTier:
+          $ref: '#/components/schemas/ConsumerTier'
         factors:
           $ref: '#/components/schemas/TrustScoreFactors'
         createdAt:
@@ -762,6 +776,10 @@ components:
       properties:
         subjectId:
           type: string
+        verificationTier:
+          $ref: '#/components/schemas/VerificationTier'
+        consumerTier:
+          $ref: '#/components/schemas/ConsumerTier'
         composite:
           type: integer
           minimum: 0
@@ -779,6 +797,8 @@ components:
                 type: integer
               confidence:
                 type: number
+              consumerTier:
+                $ref: '#/components/schemas/ConsumerTier'
               updatedAt:
                 type: string
                 format: date-time
