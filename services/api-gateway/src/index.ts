@@ -552,3 +552,84 @@ try {
 }
 
 export { WebhookDeliveryService } from "./webhooks/webhook-delivery.js";
+
+const confirmOtpSchema = z.object({
+  subjectId: z.string().min(1),
+  verificationSessionId: z.string().min(1),
+  otpCode: z.string().min(4).max(8)
+});
+
+app.post("/v1/verify/confirm", async (request, reply) => {
+  const parsed = confirmOtpSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.status(400).send({
+      error: "Invalid OTP confirmation request",
+      issues: parsed.error.flatten()
+    });
+  }
+
+  const { subjectId, verificationSessionId } = parsed.data;
+
+  const session = await prisma.verificationSession.findUnique({
+    where: { id: verificationSessionId }
+  });
+
+  if (!session) {
+    return reply.status(404).send({ error: "Verification session not found" });
+  }
+
+  if (session.subjectId !== subjectId) {
+    return reply.status(403).send({ error: "Session does not belong to this subject" });
+  }
+
+  if (session.status !== IdentityVerificationStatus.OTP_SENT) {
+    return reply.status(400).send({
+      error: "Session is not awaiting OTP confirmation",
+      status: session.status
+    });
+  }
+
+  if (session.expiresAt && session.expiresAt < new Date()) {
+    await prisma.verificationSession.update({
+      where: { id: session.id },
+      data: { status: IdentityVerificationStatus.EXPIRED }
+    });
+    return reply.status(400).send({ error: "OTP session has expired" });
+  }
+
+  await prisma.verificationSession.update({
+    where: { id: session.id },
+    data: {
+      status: IdentityVerificationStatus.VERIFIED,
+      completedAt: new Date()
+    }
+  });
+
+  const updatedSubject = await prisma.subject.update({
+    where: { id: subjectId },
+    data: {
+      verificationTier: "INDIVIDUAL",
+      tierUpdatedAt: new Date()
+    }
+  });
+
+  const verificationTier = normalizeStoredTier(updatedSubject.verificationTier);
+
+  const score = await upsertTrustScore({
+    subjectId,
+    role: "platform",
+    identityVerified: true,
+    verificationCount: 1,
+    verificationTier,
+    reason: "otp.confirmed"
+  });
+
+  return reply.status(200).send({
+    verificationSessionId: session.id,
+    status: "VERIFIED",
+    tier: verificationTier,
+    consumerTier: mapToConsumerTier(verificationTier, score.tier),
+    score
+  });
+});
