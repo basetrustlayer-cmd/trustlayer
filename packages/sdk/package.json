@@ -1,7 +1,7 @@
 {
   "name": "@trustlayer/sdk",
   "version": "0.1.0",
-  "description": "Official TrustLayer TypeScript SDK \u2014 generated from OpenAPI lock",
+  "description": "Official TrustLayer TypeScript SDK — generated from OpenAPI lock",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
     "openapi-fetch": "^0.13.0"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.76.0",
+    "@hey-api/openapi-ts": "^0.98.1",
     "typescript": "^5.4.0",
     "vitest": "^4.1.6"
   }
