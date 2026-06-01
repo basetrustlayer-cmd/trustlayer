@@ -637,8 +637,11 @@ app.post("/v1/verify/confirm", async (request, reply) => {
 // ── Slice 09: Session expiry sweep ────────────────────────────────────────────
 
 import { sweepExpiredSessions } from "./kyc/sweep.js";
+import { widgetRoutes } from "./routes/widget.js";
 
 const adminScopeSchema = z.object({ scope: z.literal("admin") }).passthrough();
+
+app.register(widgetRoutes);
 
 app.post("/v1/admin/kyc/expire-sessions", async (request, reply) => {
   const authHeader = request.headers["x-admin-scope"];
