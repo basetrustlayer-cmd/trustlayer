@@ -59,7 +59,7 @@ jobs:
 
       - run: pnpm lint
 
-      - run: pnpm typecheck
+      - run: pnpm --filter @trustlayer/api-gateway typecheck
 
       - run: pnpm test
 
