@@ -20,7 +20,7 @@ import { registerDisputeResolutionRoutes } from "./routes/dispute-resolution.js"
 import { registerNotificationRoutes } from "./routes/notifications.js";
 import { hashPii } from "./security/pii.js";
 import { upsertTrustScore, type ScoreRole } from "./scoring/scoring-service.js";
-import { mapToConsumerTier, type ConsumerTier } from "./scoring/scoring-calculator.js";
+import { mapToConsumerTier, getProjectionTtl, type ConsumerTier } from "./scoring/scoring-calculator.js";
 import { createDefaultKycOrchestrator } from "@trustlayer/kyc-orchestrator";
 import { startTrustLayerEventConsumer } from "./events/event-consumer.js";
 import { startWebhookRetryEngine } from "./webhooks/retry-engine.js";
@@ -312,6 +312,7 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
       tierCeiling: TIER_CEILINGS.UNVERIFIED,
       verificationTier: "UNVERIFIED",
       consumerTier,
+      projectionTtlSeconds: getProjectionTtl("UNVERIFIED"),
       tierUpdatedAt: null
     });
   }
@@ -345,6 +346,7 @@ app.get("/v1/tier/:subjectId", async (request, reply) => {
     tierCeiling,
     verificationTier: storedTier,
     consumerTier,
+    projectionTtlSeconds: getProjectionTtl(storedTier),
     tierUpdatedAt: subject.tierUpdatedAt?.toISOString() ?? null
   });
 });
