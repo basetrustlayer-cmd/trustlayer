@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateTrustScoreForPersistence, mapToConsumerTier } from "./scoring-calculator.js";
+import { calculateTrustScoreForPersistence, mapToConsumerTier, computeNextSteps } from "./scoring-calculator.js";
 
 describe("calculateTrustScoreForPersistence", () => {
   it("defaults unknown tiers to UNVERIFIED ceiling of 30", () => {
@@ -228,5 +228,147 @@ describe("consumerTier in calculateTrustScoreForPersistence", () => {
     });
 
     expect(result.consumerTier).toBe("VERIFIED");
+  });
+});
+
+describe("computeNextSteps", () => {
+  it("returns resolve_disputes step when disputeCount > 0", () => {
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 50,
+      transactionCount: 5,
+      reviewCount: 1,
+      disputeCount: 1,
+      hasVerificationSessions: true
+    });
+
+    expect(steps.some((s) => s.action === "resolve_disputes")).toBe(true);
+    const disputeStep = steps.find((s) => s.action === "resolve_disputes");
+    expect(disputeStep?.impact).toBe("HIGH");
+  });
+
+  it("returns complete_ghana_card_verification for UNVERIFIED with no sessions", () => {
+    const steps = computeNextSteps({
+      verificationTier: "UNVERIFIED",
+      identityFactor: 0,
+      transactionCount: 0,
+      reviewCount: 0,
+      disputeCount: 0,
+      hasVerificationSessions: false
+    });
+
+    const ghanaCardStep = steps.find(
+      (s) => s.action === "complete_ghana_card_verification"
+    );
+    expect(ghanaCardStep).toBeDefined();
+    expect(ghanaCardStep?.impact).toBe("HIGH");
+  });
+
+  it("returns verify_identity when identityFactor < 50", () => {
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 40,
+      transactionCount: 5,
+      reviewCount: 1,
+      disputeCount: 0,
+      hasVerificationSessions: true
+    });
+
+    const identityStep = steps.find((s) => s.action === "verify_identity");
+    expect(identityStep).toBeDefined();
+    expect(identityStep?.impact).toBe("HIGH");
+  });
+
+  it("returns complete_transactions when transactionCount < 5", () => {
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 50,
+      transactionCount: 3,
+      reviewCount: 1,
+      disputeCount: 0,
+      hasVerificationSessions: true
+    });
+
+    const txStep = steps.find((s) => s.action === "complete_transactions");
+    expect(txStep).toBeDefined();
+    expect(txStep?.impact).toBe("MEDIUM");
+  });
+
+  it("returns request_review when reviewCount === 0", () => {
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 50,
+      transactionCount: 5,
+      reviewCount: 0,
+      disputeCount: 0,
+      hasVerificationSessions: true
+    });
+
+    const reviewStep = steps.find((s) => s.action === "request_review");
+    expect(reviewStep).toBeDefined();
+    expect(reviewStep?.impact).toBe("MEDIUM");
+  });
+
+  it("returns increase_activity for lastActivityAt > 90 days ago", () => {
+    const ninetyOneDaysAgo = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000);
+
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 100,
+      transactionCount: 10,
+      reviewCount: 5,
+      disputeCount: 0,
+      hasVerificationSessions: true,
+      lastActivityAt: ninetyOneDaysAgo
+    });
+
+    const activityStep = steps.find((s) => s.action === "increase_activity");
+    expect(activityStep).toBeDefined();
+    expect(activityStep?.impact).toBe("MEDIUM");
+  });
+
+  it("does not return increase_activity for lastActivityAt within 90 days", () => {
+    const recentDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const steps = computeNextSteps({
+      verificationTier: "INDIVIDUAL",
+      identityFactor: 100,
+      transactionCount: 10,
+      reviewCount: 5,
+      disputeCount: 0,
+      hasVerificationSessions: true,
+      lastActivityAt: recentDate
+    });
+
+    const activityStep = steps.find((s) => s.action === "increase_activity");
+    expect(activityStep).toBeUndefined();
+  });
+
+  it("returns empty array for high score and all factors satisfied", () => {
+    const steps = computeNextSteps({
+      verificationTier: "ENHANCED",
+      identityFactor: 100,
+      transactionCount: 10,
+      reviewCount: 5,
+      disputeCount: 0,
+      hasVerificationSessions: true,
+      lastActivityAt: new Date()
+    });
+
+    expect(steps).toEqual([]);
+  });
+
+  it("sorts steps by impact (HIGH first)", () => {
+    const steps = computeNextSteps({
+      verificationTier: "UNVERIFIED",
+      identityFactor: 40,
+      transactionCount: 2,
+      reviewCount: 0,
+      disputeCount: 1,
+      hasVerificationSessions: false
+    });
+
+    const impacts = steps.map((s) => s.impact);
+    expect(impacts).toEqual(["HIGH", "HIGH", "HIGH", "MEDIUM", "MEDIUM"]);
   });
 });

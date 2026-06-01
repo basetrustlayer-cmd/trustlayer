@@ -400,6 +400,26 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
 
     const consumerTier = mapToConsumerTier(verificationTier, scoreBand);
 
+    // Check if subject has any verification sessions
+    const verificationSessionCount = await prisma.verificationSession.count({
+      where: {
+        subjectId: params.subjectId
+      }
+    });
+
+    // Calculate review count from factorReviews
+    const reviewCount = score.factorReviews > 0 ? 1 : 0;
+
+    const nextSteps = computeNextSteps({
+      verificationTier,
+      identityFactor: score.factorIdentity,
+      transactionCount: Math.max(0, Math.round(score.factorTransactions / 10)),
+      reviewCount,
+      disputeCount: score.factorDisputes > 0 ? Math.round((100 - score.factorDisputes) / 25) : 0,
+      hasVerificationSessions: verificationSessionCount > 0,
+      lastActivityAt: subject?.updatedAt
+    });
+
     return reply.status(200).send({
       subjectId: score.subjectId,
       role: score.role as ScoreRole,
@@ -408,6 +428,7 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
       confidence: score.confidence,
       verificationTier,
       consumerTier,
+      nextSteps,
       factors: {
         identity: score.factorIdentity,
         transactions: score.factorTransactions,
@@ -437,7 +458,7 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
   }
 
   const composite = Math.round(
-    scores.reduce((sum, item) => sum + item.score, 0) / scores.length
+    scores.reduce((sum: number, item: any) => sum + item.score, 0) / scores.length
   );
 
   let compositeBand = "unscored";
@@ -448,8 +469,39 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
 
   const compositeConsumerTier = mapToConsumerTier(verificationTier, compositeBand);
 
+  // Aggregate factors for composite score
+  const avgIdentityFactor = Math.round(
+    scores.reduce((sum: number, item: any) => sum + item.factorIdentity, 0) / scores.length
+  );
+  const avgTransactionCount = Math.max(
+    0,
+    Math.round(
+      scores.reduce((sum: number, item: any) => sum + item.factorTransactions, 0) / scores.length / 10
+    )
+  );
+  const reviewCount = scores.some((s: any) => s.factorReviews > 0) ? 1 : 0;
+  const avgDisputeFactor = scores.reduce((sum: number, item: any) => sum + item.factorDisputes, 0) / scores.length;
+  const disputeCount = avgDisputeFactor > 0 ? Math.round((100 - avgDisputeFactor) / 25) : 0;
+
+  // Check if subject has any verification sessions
+  const verificationSessionCount = await prisma.verificationSession.count({
+    where: {
+      subjectId: params.subjectId
+    }
+  });
+
+  const nextSteps = computeNextSteps({
+    verificationTier,
+    identityFactor: avgIdentityFactor,
+    transactionCount: avgTransactionCount,
+    reviewCount,
+    disputeCount,
+    hasVerificationSessions: verificationSessionCount > 0,
+    lastActivityAt: subject?.updatedAt
+  });
+
   const scoresByRole = Object.fromEntries(
-    scores.map((score) => {
+    scores.map((score: any) => {
       let scoreBand = "unscored";
       if (score.score >= 85) scoreBand = "high_trust";
       else if (score.score >= 70) scoreBand = "good_standing";
@@ -476,6 +528,7 @@ app.get("/v1/score/:subjectId", async (request, reply) => {
     verificationTier,
     consumerTier: compositeConsumerTier,
     composite,
+    nextSteps,
     scores: scoresByRole
   });
 });
