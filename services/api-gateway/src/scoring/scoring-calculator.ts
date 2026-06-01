@@ -5,7 +5,18 @@ const TIER_CEILINGS = {
   ENHANCED: 100
 } as const;
 
-type VerificationTier = keyof typeof TIER_CEILINGS;
+export type VerificationTier = keyof typeof TIER_CEILINGS;
+export const PROJECTION_TTL_SECONDS: Record<VerificationTier, number> = {
+  UNVERIFIED: 21_600,
+  INDIVIDUAL: 86_400,
+  BUSINESS:   604_800,
+  ENHANCED:   2_592_000,
+} as const;
+
+export function getProjectionTtl(tier: VerificationTier): number {
+  return PROJECTION_TTL_SECONDS[tier];
+}
+
 
 export type ScoreRole =
   | "seller"
