@@ -235,3 +235,54 @@ export function calculateTrustScoreForPersistence(
     consumerTier
   };
 }
+
+export type NextStep = {
+  action: string;
+  impact: "HIGH" | "MEDIUM" | "LOW";
+  description?: string;
+};
+
+export type ComputeNextStepsInput = {
+  verificationTier: VerificationTier;
+  identityFactor: number;
+  transactionCount: number;
+  reviewCount: number;
+  disputeCount: number;
+  hasVerificationSessions: boolean;
+  lastActivityAt?: Date | string | null;
+};
+
+export function computeNextSteps(input: ComputeNextStepsInput): NextStep[] {
+  const steps: NextStep[] = [];
+
+  if (input.disputeCount > 0) {
+    steps.push({ action: "resolve_disputes", impact: "HIGH", description: "Resolve active disputes to improve trust score" });
+  }
+
+  if (input.verificationTier === "UNVERIFIED" && !input.hasVerificationSessions) {
+    steps.push({ action: "complete_ghana_card_verification", impact: "HIGH", description: "Complete Ghana Card verification" });
+  } else if (input.identityFactor < 50) {
+    steps.push({ action: "verify_identity", impact: "HIGH", description: "Verify your identity to build trust" });
+  }
+
+  if (input.transactionCount < 5) {
+    steps.push({ action: "complete_transactions", impact: "MEDIUM", description: "Complete more transactions to build history" });
+  }
+
+  if (input.reviewCount === 0) {
+    steps.push({ action: "request_review", impact: "MEDIUM", description: "Request reviews from transaction partners" });
+  }
+
+  if (input.lastActivityAt) {
+    const activityDate = input.lastActivityAt instanceof Date ? input.lastActivityAt : new Date(input.lastActivityAt);
+    const daysInactive = (Date.now() - activityDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysInactive > 90) {
+      steps.push({ action: "increase_activity", impact: "MEDIUM", description: "Increase platform activity to maintain trust score" });
+    }
+  }
+
+  const impactOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+  steps.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact]);
+
+  return steps;
+}
