@@ -14,7 +14,7 @@ assert() {
 }
 echo "-- 1. health"
 R=$(curl -sf "$BASE_URL/health")
-assert "status=ok" "$(echo $R | jq -r .status)" "ok"
+assert "status=ok" "$(echo "$R" | jq -r .status)" "ok"
 assert "service field" "$(echo $R | jq -r .service)" "trustlayer-api-gateway"
 echo "-- 2. auth gate"
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/v1/score/$SELLER")
@@ -23,8 +23,8 @@ echo "-- 3. score endpoint"
 SCORE=$(curl -sf -H "X-API-Key: $API_KEY" "$BASE_URL/v1/score/$SELLER")
 assert "consumerTier present" "$(echo $SCORE | jq 'has("consumerTier")')" "true"
 assert "verificationTier present" "$(echo $SCORE | jq 'has("verificationTier")')" "true"
-assert "confidence present" "$(echo $SCORE | jq 'has("confidence")')" "true"
-assert "score is number" "$(echo $SCORE | jq '.score | type')" '"number"'
+assert "confidence present" "$(echo $SCORE | jq '.scores.seller | has("confidence")')" "true"
+assert "score is number" "$(echo $SCORE | jq '.scores.seller.score | type')" '"number"'
 CT=$(echo $SCORE | jq -r .consumerTier)
 assert "consumerTier vocab" "$(echo $CT | grep -cE '^(NEW|BUILDING|VERIFIED|TRUSTED)$')" "1"
 echo "-- 4. tier and projectionTtlSeconds"
@@ -33,13 +33,13 @@ assert "projectionTtlSeconds present" "$(echo $TIER | jq 'has("projectionTtlSeco
 assert "projectionTtlSeconds > 0" "$(echo $TIER | jq '.projectionTtlSeconds > 0')" "true"
 assert "consumerTier in tier response" "$(echo $TIER | jq 'has("consumerTier")')" "true"
 echo "-- 5. confidence range"
-assert "confidence in range" "$(echo $SCORE | jq '.confidence >= 0.10 and .confidence <= 0.95')" "true"
-CONF=$(echo $SCORE | jq -r .confidence)
+assert "confidence in range" "$(echo $SCORE | jq '.scores.seller.confidence >= 0.10 and .scores.seller.confidence <= 0.95')" "true"
+CONF=$(echo $SCORE | jq -r .scores.seller.confidence)
 echo "  i confidence=$CONF"
 echo "-- 6. verify initiation"
 VR=$(curl -sf -X POST -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"subjectId":"render_test_001","method":"GHANA_CARD","country":"GH"}' \
+  -d '{"subjectId":"render_test_001","method":"GHANA_CARD","country":"GH","nationalId":"GHA-000000000-0"}' \
   "$BASE_URL/v1/verify" || echo '{}')
 assert "verify returns session or status" "$(echo $VR | jq 'has("verificationSessionId") or has("status")')" "true"
 echo "-- 7. escrow hold"
@@ -48,15 +48,15 @@ HOLD=$(curl -sf -X POST -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"buyerSubjectId\":\"$BUYER\",\"sellerSubjectId\":\"$SELLER\",\"amountCents\":50000,\"currency\":\"GHS\",\"reference\":\"$REF\"}" \
   "$BASE_URL/v1/escrow/holds" || echo '{"status":"ERROR"}')
-assert "hold status=HELD" "$(echo $HOLD | jq -r .status)" "HELD"
-HOLD_REF=$(echo $HOLD | jq -r '.reference // empty')
+assert "hold status=HELD" "$(echo $HOLD | jq -r .hold.status)" "HELD"
+HOLD_REF=$(echo $HOLD | jq -r '.hold.reference // empty')
 echo "-- 8. escrow release"
 if [ -n "$HOLD_REF" ]; then
   REL=$(curl -sf -X POST -H "X-API-Key: $API_KEY" \
     -H "Content-Type: application/json" \
     -d '{"reason":"goods_delivered"}' \
     "$BASE_URL/v1/escrow/$HOLD_REF/release" || echo '{"status":"ERROR"}')
-  assert "release status=RELEASED" "$(echo $REL | jq -r .status)" "RELEASED"
+  assert "release status=RELEASED" "$(echo $REL | jq -r .hold.status)" "RELEASED"
 else
   echo "  skip -- no hold ref"; ((FAIL++))
 fi

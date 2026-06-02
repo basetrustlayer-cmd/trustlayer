@@ -122,6 +122,7 @@ async function main() {
       environment: "TEST",
       planTier: "SANDBOX",
       apiScopes: [
+        "api:access",
         "tier:read",
         "verification:write",
         "score:read",
@@ -138,6 +139,7 @@ async function main() {
       platformId: platform.id,
       keyPrefix: sandboxApiKey.slice(0, 12),
       scopes: [
+        "api:access",
         "tier:read",
         "verification:write",
         "score:read",
@@ -152,6 +154,7 @@ async function main() {
       keyPrefix: sandboxApiKey.slice(0, 12),
       keyHash: hashApiKey(sandboxApiKey),
       scopes: [
+        "api:access",
         "tier:read",
         "verification:write",
         "score:read",
