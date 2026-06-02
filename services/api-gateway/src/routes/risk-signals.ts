@@ -14,7 +14,7 @@ const riskSignalSchema = z.object({
     "MESSAGE_ABUSE"
   ]),
   severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.any()).optional()
 });
 
 export async function registerRiskSignalRoutes(
