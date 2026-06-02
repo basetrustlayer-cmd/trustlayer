@@ -640,12 +640,14 @@ import { sweepExpiredSessions } from "./kyc/sweep.js";
 import { widgetRoutes } from "./routes/widget.js";
 import { governanceRoutes } from "./routes/governance.js";
 import { registerFraudSweepRoutes } from "./routes/fraud-sweep.js";
+import { registerRiskSignalRoutes } from "./routes/risk-signals.js";
 
 const adminScopeSchema = z.object({ scope: z.literal("admin") }).passthrough();
 
 app.register(widgetRoutes);
 app.register(governanceRoutes);
 await registerFraudSweepRoutes(app);
+await registerRiskSignalRoutes(app);
 
 app.post("/v1/admin/kyc/expire-sessions", async (request, reply) => {
   const authHeader = request.headers["x-admin-scope"];
