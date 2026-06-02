@@ -50,7 +50,7 @@ export async function registerRiskSignalRoutes(
             signalType,
             reportedSeverity: severity,
             ...(metadata ?? {})
-          }
+          } as Record<string, unknown>
         });
       } catch (err) {
         console.warn("risk-signal: FraudAlert creation failed", { subjectId, signalType, err });
