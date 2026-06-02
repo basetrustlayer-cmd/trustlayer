@@ -2,7 +2,6 @@ import { randomUUID } from "crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createFraudAlert } from "../fraud-alerts/fraud-alert-service.js";
-import { prisma } from "@trustlayer/database";
 
 const riskSignalSchema = z.object({
   subjectId: z.string().min(1),
@@ -33,26 +32,14 @@ export async function registerRiskSignalRoutes(
     const { subjectId, signalType, severity, metadata } = parsed.data;
 
     // Persist signal for analyst review — advisory only, never modifies tier or score
-    try {
-      await prisma.eventLog.create({
-        data: {
-          eventId: randomUUID(),
-          topic: "marketplace.risk_signals",
-          eventName: "marketplace.risk_signal",
-          payload: JSON.parse(JSON.stringify({
-            subjectId,
-            signalType,
-            severity,
-            metadata: metadata ?? {},
-            source: "marketplace_consumer"
-          })),
-          status: "RECEIVED"
-        }
-      });
-    } catch (err) {
-      // Log but never surface — response is always 202 (TDD §8.3)
-      console.warn("risk-signal: eventLog write failed", { subjectId, signalType, err });
-    }
+    console.info("marketplace.risk_signal", JSON.stringify({
+      eventId: randomUUID(),
+      subjectId,
+      signalType,
+      severity,
+      metadata: metadata ?? {},
+      source: "marketplace_consumer"
+    }));
 
     // HIGH or CRITICAL signals create a FraudAlert for analyst review
     if (severity === "HIGH" || severity === "CRITICAL") {
