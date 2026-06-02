@@ -12,3 +12,10 @@ turbo/
 # Runtime uploads
 apps/dashboard/uploads/
 .turbo/
+
+# Turbo cache/log artifacts
+.turbo/
+**/.turbo/
+
+# Local backups
+*.bak

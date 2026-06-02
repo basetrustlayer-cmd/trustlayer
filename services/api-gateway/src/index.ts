@@ -544,15 +544,6 @@ if (process.env.EVENT_CONSUMER_ENABLED === "true") {
 
 startWebhookRetryEngine();
 
-try {
-  await app.listen({ port, host });
-} catch (error) {
-  app.log.error(error);
-  process.exit(1);
-}
-
-export { WebhookDeliveryService } from "./webhooks/webhook-delivery.js";
-
 const confirmOtpSchema = z.object({
   subjectId: z.string().min(1),
   verificationSessionId: z.string().min(1),
@@ -660,3 +651,12 @@ app.post("/v1/admin/kyc/expire-sessions", async (request, reply) => {
     timestamp: new Date().toISOString()
   });
 });
+
+export { WebhookDeliveryService } from "./webhooks/webhook-delivery.js";
+
+try {
+  await app.listen({ port, host });
+} catch (error) {
+  app.log.error(error);
+  process.exit(1);
+}

@@ -6,20 +6,15 @@ export const revalidate = 60;
 
 export async function GET(
   _req: Request,
-  { params }: { params: { subjectId: string } }
+  context: { params: Promise<{ subjectId: string }> }
 ) {
-  const { subjectId } = params;
+  const { subjectId } = await context.params;
 
-  const [subject, score, certifications] = await Promise.all([
+  const [subject, score] = await Promise.all([
     prisma.subject.findUnique({ where: { id: subjectId } }),
     prisma.trustScore.findFirst({
       where: { subjectId },
-      orderBy: { calculatedAt: "desc" }
-    }),
-    prisma.certification.findMany({
-      where: { subjectId, status: "ACTIVE" },
-      orderBy: { issuedAt: "desc" },
-      take: 5
+      orderBy: { updatedAt: "desc" }
     })
   ]);
 
@@ -29,23 +24,24 @@ export async function GET(
 
   return NextResponse.json({
     subjectId: subject.id,
-    displayName: subject.displayName ?? subject.id,
+    displayName: subject.externalId ?? subject.id,
     verificationTier: subject.verificationTier,
     score: score
       ? {
           value: score.score,
-          tier: score.tier,
-          consumerTier: score.consumerTier,
+          tier: String(score.tierCeiling),
+          consumerTier: String(score.tierCeiling),
           confidence: score.confidence,
-          factors: score.factors,
-          calculatedAt: score.calculatedAt
+          factors: {
+            identity: score.factorIdentity,
+            transactions: score.factorTransactions,
+            reviews: score.factorReviews,
+            disputes: score.factorDisputes,
+            roleSpecific: score.factorRoleSpecific
+          },
+          calculatedAt: score.updatedAt
         }
       : null,
-    certifications: certifications.map((c) => ({
-      id: c.id,
-      type: c.type,
-      issuedAt: c.issuedAt,
-      expiresAt: c.expiresAt
-    }))
+    certifications: []
   });
 }
