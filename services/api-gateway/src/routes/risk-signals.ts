@@ -32,17 +32,10 @@ export async function registerRiskSignalRoutes(
     const { subjectId, signalType, severity, metadata } = parsed.data;
 
     // Persist signal for analyst review — advisory only, never modifies tier or score
-    // eslint-disable-next-line no-console
+    const eventId = randomUUID();
+    const metaStr = Object.keys(metadata ?? {}).length > 0 ? JSON.stringify(metadata) : "{}";
     console.info(
-      "marketplace.risk_signal",
-      JSON.stringify(Object.assign(Object.create(null), {
-        eventId: randomUUID(),
-        subjectId,
-        signalType,
-        severity,
-        metadata: Object.assign(Object.create(null), metadata ?? {}),
-        source: "marketplace_consumer"
-      }) as Record<string, never>)
+      `marketplace.risk_signal eventId=${eventId} subjectId=${subjectId} signalType=${signalType} severity=${severity} metadata=${metaStr} source=marketplace_consumer`
     );
 
     // HIGH or CRITICAL signals create a FraudAlert for analyst review
