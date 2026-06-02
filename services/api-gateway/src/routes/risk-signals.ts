@@ -39,13 +39,13 @@ export async function registerRiskSignalRoutes(
           eventId: randomUUID(),
           topic: "marketplace.risk_signals",
           eventName: "marketplace.risk_signal",
-          payload: {
+          payload: JSON.parse(JSON.stringify({
             subjectId,
             signalType,
             severity,
-            metadata: (metadata ?? {}) as Prisma.InputJsonValue,
+            metadata: metadata ?? {},
             source: "marketplace_consumer"
-          } as Prisma.InputJsonValue,
+          })) as Prisma.InputJsonValue,
           status: "RECEIVED"
         }
       });
