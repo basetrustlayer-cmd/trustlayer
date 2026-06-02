@@ -1,4 +1,0 @@
-
-> @trustlayer/shared-types@0.1.0 typecheck /workspaces/trustlayer.worktrees/copilot-worktree-2026-06-01T13-35-47/packages/shared-types
-> tsc --noEmit
-

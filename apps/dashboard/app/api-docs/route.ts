@@ -18,6 +18,6 @@ const config = {
   layout: "modern",
   hideModels: false,
   searchHotKey: "k"
-};
+} as const;
 
-export default ApiReference(config);
+export const GET = ApiReference(config);

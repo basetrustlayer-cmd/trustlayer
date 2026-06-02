@@ -71,9 +71,10 @@ async function fetchProfile(subjectId: string): Promise<ProfileData | null> {
 export default async function ProfilePage({
   params
 }: {
-  params: { subjectId: string };
+  params: Promise<{ subjectId: string }>;
 }) {
-  const profile = await fetchProfile(params.subjectId);
+  const { subjectId } = await params;
+  const profile = await fetchProfile(subjectId);
   if (!profile) notFound();
 
   const tier = profile.verificationTier;

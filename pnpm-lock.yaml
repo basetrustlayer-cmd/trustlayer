@@ -72,6 +72,9 @@ importers:
       '@scalar/nextjs-api-reference':
         specifier: ^0.10.19
         version: 0.10.19(next@15.5.18(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react@19.2.6)
+      '@trustlayer/database':
+        specifier: workspace:^
+        version: link:../../packages/database
       '@trustlayer/kyc-orchestrator':
         specifier: workspace:*
         version: link:../../services/kyc-orchestrator
@@ -162,6 +165,9 @@ importers:
       tsx:
         specifier: ^4.20.0
         version: 4.22.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/sdk:
     dependencies:
