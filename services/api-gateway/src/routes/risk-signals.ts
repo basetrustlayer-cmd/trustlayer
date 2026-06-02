@@ -37,7 +37,7 @@ export async function registerRiskSignalRoutes(
       subjectId,
       signalType,
       severity,
-      metadata: metadata ?? {},
+      metadata: (metadata ?? {}) as unknown,
       source: "marketplace_consumer"
     }));
 
