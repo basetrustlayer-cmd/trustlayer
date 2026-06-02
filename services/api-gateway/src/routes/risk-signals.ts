@@ -45,7 +45,7 @@ export async function registerRiskSignalRoutes(
             severity,
             metadata: metadata ?? {},
             source: "marketplace_consumer"
-          }),
+          })),
           status: "RECEIVED"
         }
       });
