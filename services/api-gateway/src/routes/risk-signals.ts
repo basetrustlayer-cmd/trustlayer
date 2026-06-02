@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createFraudAlert } from "../fraud-alerts/fraud-alert-service.js";
-import { prisma, Prisma } from "@trustlayer/database";
+import { prisma } from "@trustlayer/database";
 
 const riskSignalSchema = z.object({
   subjectId: z.string().min(1),
@@ -45,7 +45,7 @@ export async function registerRiskSignalRoutes(
             severity,
             metadata: metadata ?? {},
             source: "marketplace_consumer"
-          })) as Prisma.InputJsonValue,
+          }),
           status: "RECEIVED"
         }
       });
