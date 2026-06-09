@@ -6,7 +6,7 @@ import {
   Activity,
   BadgeCheck,
   Code2,
-  FileShield,
+  ShieldCheck,
   Gauge,
   Settings,
   ShieldAlert,
@@ -18,7 +18,7 @@ const navigation = [
   { label: "TrustScores", href: "/dashboard/trust-scores", icon: Activity },
   { label: "Fraud Intelligence", href: "/dashboard/fraud", icon: ShieldAlert },
   { label: "Developers", href: "/dashboard/developers", icon: Code2 },
-  { label: "Compliance", href: "/dashboard/compliance", icon: FileShield },
+  { label: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ] as const;
 
