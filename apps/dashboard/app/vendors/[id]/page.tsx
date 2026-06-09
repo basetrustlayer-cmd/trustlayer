@@ -2,14 +2,14 @@ import Link from "next/link";
 
 const trustSignals = [
   { label: "Identity Verified", status: "Verified" },
-  { label: "Business Evidence", status: "Reviewed" },
+  { label: "Seller-Side Verification", status: "Prioritized" },
   { label: "Trust Badge", status: "Active" },
   { label: "Reputation Portability", status: "Enabled" }
 ];
 
 const recentActivity = [
   "TrustScore refreshed from verified evidence",
-  "Verification package reviewed",
+  "Seller-side verification package reviewed",
   "Public trust badge generated"
 ];
 
@@ -18,23 +18,24 @@ export default async function PublicProfilePage() {
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <section className="mx-auto max-w-6xl">
         <Link href="/vendors" className="text-sm font-medium text-cyan-200 hover:text-cyan-100">
-          ← Back to Trust Network Directory
+          ← Back to Trust Entity Explorer
         </Link>
 
         <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.06] p-8">
           <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan-300">
-            Public Trust Profile
+            Public Trust Entity Profile
           </p>
 
           <div className="mt-5 flex flex-col justify-between gap-6 md:flex-row md:items-start">
             <div>
               <h1 className="text-4xl font-semibold tracking-tight">
-                Verified Network Subject
+                Verified Trust Entity
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                A public reputation profile generated from verified identity,
-                TrustScore intelligence, certification evidence, and portable
-                trust signals.
+                A portable reputation profile for an individual or business entity.
+                The same entity can act as a buyer in one transaction and a seller
+                in another, while TrustLayer emphasizes seller-side verification
+                because that side usually carries higher counterparty risk.
               </p>
             </div>
 
@@ -47,10 +48,10 @@ export default async function PublicProfilePage() {
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-4">
+          <MetricCard label="Entity Type" value="Business" />
+          <MetricCard label="Primary Risk Role" value="Seller" />
           <MetricCard label="Verification Tier" value="KYB Verified" />
           <MetricCard label="Badge Status" value="Active" />
-          <MetricCard label="Confidence" value="High" />
-          <MetricCard label="Profile Type" value="Business" />
         </section>
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
@@ -74,9 +75,9 @@ export default async function PublicProfilePage() {
           <aside className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
             <h2 className="text-xl font-semibold">Evidence Summary</h2>
             <p className="mt-4 text-sm leading-6 text-slate-300">
-              This profile is designed to expose only public, consented trust
-              signals. Sensitive verification documents remain private while
-              their resulting trust status can be verified by counterparties.
+              Public profiles expose only consented trust signals. Sensitive
+              verification documents remain private while the resulting trust
+              status can be verified by counterparties.
             </p>
 
             <Link
