@@ -1,0 +1,23 @@
+{
+  "name": "@trustlayer/fraud-graph",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo lint fraud graph",
+    "typecheck": "tsc --noEmit",
+    "test": "echo test fraud graph"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
