@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type VerificationRequest = {
@@ -10,6 +11,8 @@ type VerificationRequest = {
   updatedAt: string;
 };
 
+const filters = ["ALL", "DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED", "REJECTED", "EXPIRED"];
+
 const nextActions: Record<string, { label: string; status: string } | null> = {
   DRAFT: { label: "Submit for review", status: "SUBMITTED" },
   SUBMITTED: null,
@@ -19,24 +22,25 @@ const nextActions: Record<string, { label: string; status: string } | null> = {
   EXPIRED: { label: "Resubmit", status: "SUBMITTED" }
 };
 
-const statusOrder = ["DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED"];
-
 function formatStatus(status: string) {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  return status.toLowerCase().split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
 function getProgress(status: string) {
-  const index = statusOrder.indexOf(status);
-
+  const order = ["DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED"];
+  const index = order.indexOf(status);
   if (status === "REJECTED") return 50;
   if (status === "EXPIRED") return 100;
   if (index < 0) return 0;
+  return Math.round(((index + 1) / order.length) * 100);
+}
 
-  return Math.round(((index + 1) / statusOrder.length) * 100);
+function getPriority(status: string) {
+  if (status === "REJECTED") return "Needs attention";
+  if (status === "SUBMITTED" || status === "IN_REVIEW") return "In review";
+  if (status === "APPROVED") return "Verified";
+  if (status === "EXPIRED") return "Renewal needed";
+  return "Draft";
 }
 
 export default function VerificationRequestsPage() {
@@ -55,11 +59,7 @@ export default function VerificationRequestsPage() {
   }, []);
 
   const filteredRequests = useMemo(() => {
-    if (filter === "ALL") {
-      return requests;
-    }
-
-    return requests.filter((request) => request.status === filter);
+    return filter === "ALL" ? requests : requests.filter((request) => request.status === filter);
   }, [filter, requests]);
 
   const counts = useMemo(() => {
@@ -82,14 +82,13 @@ export default function VerificationRequestsPage() {
 
     const response = await fetch("/api/verification/requests", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title })
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const data = await response.json();
       setStatus(data.error || "Could not create verification request.");
       return;
     }
@@ -104,9 +103,7 @@ export default function VerificationRequestsPage() {
 
     const response = await fetch("/api/verification/requests", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: nextStatus })
     });
 
@@ -122,136 +119,166 @@ export default function VerificationRequestsPage() {
   }
 
   return (
-    <main style={{ padding: 40, fontFamily: "Arial, sans-serif", maxWidth: 1100 }}>
-      <p>
-        <a href="/">Back to dashboard</a>
-      </p>
+    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
+      <section className="mx-auto max-w-7xl">
+        <Link href="/" className="text-sm font-medium text-cyan-200 hover:text-cyan-100">
+          ← Back to Trust Center
+        </Link>
 
-      <h1>Verification Management</h1>
-      <p>
-        Create, submit, and track verification packages for customers, vendors,
-        lenders, marketplace sellers, workers, and counterparties.
-      </p>
+        <div className="mt-6">
+          <p className="text-sm font-medium uppercase tracking-[0.3em] text-cyan-300">
+            Verification Command Center
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+            Govern every verification workflow.
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300">
+            Create, submit, track, and prioritize verification packages for customers,
+            vendors, lenders, sellers, workers, and counterparties.
+          </p>
+        </div>
 
-      <section
-        style={{
-          marginTop: 24,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 12
-        }}
-      >
-        {["ALL", "DRAFT", "SUBMITTED", "IN_REVIEW", "APPROVED", "REJECTED", "EXPIRED"].map(
-          (item) => (
+        <section className="mt-8 grid gap-3 md:grid-cols-4 xl:grid-cols-7">
+          {filters.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setFilter(item)}
-              style={{
-                padding: 14,
-                border: "1px solid #ddd",
-                background: filter === item ? "#111" : "#fff",
-                color: filter === item ? "#fff" : "#111",
-                textAlign: "left"
-              }}
+              className={[
+                "rounded-2xl border p-4 text-left transition",
+                filter === item
+                  ? "border-cyan-300 bg-cyan-300 text-slate-950"
+                  : "border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.1]"
+              ].join(" ")}
             >
-              <strong>{formatStatus(item)}</strong>
-              <br />
-              {counts[item] || 0}
+              <span className="text-sm font-semibold">{formatStatus(item)}</span>
+              <span className="mt-2 block text-2xl font-bold">{counts[item] || 0}</span>
             </button>
-          )
-        )}
-      </section>
+          ))}
+        </section>
 
-      <form
-        onSubmit={handleCreate}
-        style={{
-          display: "grid",
-          gap: 12,
-          marginTop: 32,
-          padding: 20,
-          border: "1px solid #ddd"
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Create Verification Request</h2>
-        <input
-          name="title"
-          placeholder="Example: Supplier onboarding verification"
-          required
-          style={{ padding: 12 }}
-        />
-        <button type="submit" style={{ padding: 12 }}>
-          Create verification request
-        </button>
-      </form>
+        <section className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          <form
+            onSubmit={handleCreate}
+            className="rounded-3xl border border-white/10 bg-white/[0.06] p-6"
+          >
+            <h2 className="text-xl font-semibold">Create Verification Request</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Start a new verification package with a clear business purpose.
+            </p>
 
-      {status ? <p style={{ marginTop: 16 }}>{status}</p> : null}
+            <input
+              name="title"
+              placeholder="Example: Supplier onboarding verification"
+              required
+              className="mt-5 w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300"
+            />
 
-      <section style={{ marginTop: 32 }}>
-        <h2>Requests</h2>
+            <button
+              type="submit"
+              className="mt-4 rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+            >
+              Create verification request
+            </button>
 
-        {filteredRequests.length === 0 ? (
-          <p>No verification requests found for this filter.</p>
-        ) : (
-          <div style={{ display: "grid", gap: 16 }}>
-            {filteredRequests.map((request) => {
-              const action = nextActions[request.status];
-              const progress = getProgress(request.status);
+            {status ? (
+              <p className="mt-4 rounded-xl border border-white/10 bg-slate-950/50 p-3 text-sm text-slate-300">
+                {status}
+              </p>
+            ) : null}
+          </form>
 
-              return (
-                <article
-                  key={request.id}
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: 20
-                  }}
-                >
-                  <h3><a href={`/verification/requests/${request.id}`}>{request.title}</a></h3>
-                  <p>
-                    <strong>Status:</strong> {formatStatus(request.status)}
-                  </p>
+          <section className="rounded-3xl border border-white/10 bg-white/[0.06] p-6">
+            <h2 className="text-xl font-semibold">Review Queue Intelligence</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Prioritize rejected, expired, and in-review requests before they block onboarding.
+            </p>
 
-                  <div
-                    style={{
-                      height: 10,
-                      border: "1px solid #ddd",
-                      maxWidth: 520,
-                      marginBottom: 12
-                    }}
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <QueueMetric label="Needs attention" value={counts.REJECTED || 0} />
+              <QueueMetric label="In review" value={(counts.SUBMITTED || 0) + (counts.IN_REVIEW || 0)} />
+              <QueueMetric label="Approved" value={counts.APPROVED || 0} />
+            </div>
+          </section>
+        </section>
+
+        <section className="mt-6">
+          <h2 className="text-xl font-semibold">Requests</h2>
+
+          {filteredRequests.length === 0 ? (
+            <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-sm text-slate-400">
+              No verification requests found for this filter.
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-4">
+              {filteredRequests.map((request) => {
+                const action = nextActions[request.status];
+                const progress = getProgress(request.status);
+
+                return (
+                  <article
+                    key={request.id}
+                    className="rounded-3xl border border-white/10 bg-white/[0.06] p-6"
                   >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${progress}%`,
-                        background: "#111"
-                      }}
-                    />
-                  </div>
+                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                      <div>
+                        <Link
+                          href={`/verification/requests/${request.id}`}
+                          className="text-lg font-semibold text-white hover:text-cyan-200"
+                        >
+                          {request.title}
+                        </Link>
+                        <p className="mt-2 text-sm text-slate-400">
+                          Priority: {getPriority(request.status)}
+                        </p>
+                      </div>
 
-                  <p>
-                    Created: {new Date(request.createdAt).toLocaleDateString()}
-                  </p>
-                  <p>
-                    Updated: {new Date(request.updatedAt).toLocaleDateString()}
-                  </p>
+                      <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-200">
+                        {formatStatus(request.status)}
+                      </span>
+                    </div>
 
-                  {action ? (
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(request.id, action.status)}
-                      style={{ padding: 10 }}
-                    >
-                      {action.label}
-                    </button>
-                  ) : (
-                    <p>No customer-side action available.</p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
+                    <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-cyan-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-4 grid gap-2 text-sm text-slate-400 md:grid-cols-2">
+                      <p>Created: {new Date(request.createdAt).toLocaleDateString()}</p>
+                      <p>Updated: {new Date(request.updatedAt).toLocaleDateString()}</p>
+                    </div>
+
+                    {action ? (
+                      <button
+                        type="button"
+                        onClick={() => updateStatus(request.id, action.status)}
+                        className="mt-5 rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+                      >
+                        {action.label}
+                      </button>
+                    ) : (
+                      <p className="mt-5 text-sm text-slate-500">
+                        No customer-side action available.
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </section>
     </main>
+  );
+}
+
+function QueueMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <article className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-semibold">{value}</p>
+    </article>
   );
 }
