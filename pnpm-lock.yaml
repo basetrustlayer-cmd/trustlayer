@@ -169,18 +169,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/fraud-graph:
-    devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/kyc-orchestrator:
-    devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/sdk:
     dependencies:
       openapi-fetch:
