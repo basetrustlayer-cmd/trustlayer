@@ -63,10 +63,14 @@ export default function IntegratorPortalPage() {
           </SectionCard>
 
           <aside className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-6">
-            <h2 className="text-xl font-semibold text-cyan-100">14-Day Free Trial</h2>
+            <h2 className="text-xl font-semibold text-cyan-100">
+              14-Day Free Trial
+            </h2>
+
             <p className="mt-3 text-sm leading-6 text-cyan-50">
-              Test TrustLayer in sandbox, generate API keys, verify sample entities,
-              and preview embedded trust signals before choosing a paid plan.
+              Test TrustLayer in sandbox, generate API keys, verify sample
+              entities, and preview embedded trust signals before choosing a
+              paid plan.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -76,6 +80,7 @@ export default function IntegratorPortalPage() {
               >
                 Start Trial
               </Link>
+
               <Link
                 href="/api-docs"
                 className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-white/10"
@@ -106,14 +111,18 @@ export default function IntegratorPortalPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
                 <h3 className="font-semibold text-white">Trust Entity</h3>
+
                 <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Free participant who wants to verify identity, generate a TrustScore,
-                  publish a badge, and improve customer confidence.
+                  Free participant who wants to verify identity, generate a
+                  TrustScore, publish a badge, and improve customer confidence.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5">
-                <h3 className="font-semibold text-cyan-100">TrustLayer Integrator</h3>
+                <h3 className="font-semibold text-cyan-100">
+                  TrustLayer Integrator
+                </h3>
+
                 <p className="mt-2 text-sm leading-6 text-cyan-50">
                   Paying system owner that embeds TrustLayer through SDKs, APIs,
                   webhooks, verification flows, and trust-signaling components.
