@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   DashboardLayout,
+  MetricsGrid,
   PageHeader,
   SectionCard,
   StatCard
@@ -50,7 +51,7 @@ export default function IntegratorPortalPage() {
         />
       </div>
 
-      <section className="mt-8 grid gap-4 md:grid-cols-4">
+      <MetricsGrid>
         <StatCard
           label="Integrator"
           value={integrator?.organizationName ?? "Demo Integrator"}
@@ -67,7 +68,7 @@ export default function IntegratorPortalPage() {
           detail="Production customers"
         />
         <StatCard label="Billing" value="Paid" detail="For integrators only" />
-      </section>
+      </MetricsGrid>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
         <SectionCard
