@@ -1,5 +1,12 @@
 import Link from "next/link";
 import { PageHeader, SectionCard, StatCard } from "../../components/trustlayer";
+import {
+  getIntegratorById,
+  listActiveIntegrators,
+  listTrialIntegrators
+} from "../../../../packages/shared-types/src/repositories";
+
+const integratorId = "integrator_001";
 
 const setupSteps = [
   "Start free trial",
@@ -20,6 +27,10 @@ const products = [
 ];
 
 export default function IntegratorPortalPage() {
+  const integrator = getIntegratorById(integratorId);
+  const trialIntegrators = listTrialIntegrators();
+  const activeIntegrators = listActiveIntegrators();
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <section className="mx-auto max-w-7xl">
@@ -36,9 +47,13 @@ export default function IntegratorPortalPage() {
         </div>
 
         <section className="mt-8 grid gap-4 md:grid-cols-4">
-          <StatCard label="Trial" value="14 days" detail="Sandbox access" />
-          <StatCard label="SDK Setup" value="<30 min" detail="Developer-first flow" />
-          <StatCard label="Trust APIs" value="Active" detail="Verification + scoring" />
+          <StatCard
+            label="Integrator"
+            value={integrator?.organizationName ?? "Demo Integrator"}
+            detail={integrator?.status ?? "Trial"}
+          />
+          <StatCard label="Trial Accounts" value={`${trialIntegrators.length}`} detail="Currently evaluating" />
+          <StatCard label="Active Accounts" value={`${activeIntegrators.length}`} detail="Production customers" />
           <StatCard label="Billing" value="Paid" detail="For integrators only" />
         </section>
 
@@ -63,10 +78,7 @@ export default function IntegratorPortalPage() {
           </SectionCard>
 
           <aside className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-6">
-            <h2 className="text-xl font-semibold text-cyan-100">
-              14-Day Free Trial
-            </h2>
-
+            <h2 className="text-xl font-semibold text-cyan-100">14-Day Free Trial</h2>
             <p className="mt-3 text-sm leading-6 text-cyan-50">
               Test TrustLayer in sandbox, generate API keys, verify sample
               entities, and preview embedded trust signals before choosing a
@@ -82,7 +94,7 @@ export default function IntegratorPortalPage() {
               </Link>
 
               <Link
-                href="/api-docs"
+                href="/integrators/docs"
                 className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-white/10"
               >
                 View Developer Docs
@@ -111,7 +123,6 @@ export default function IntegratorPortalPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
                 <h3 className="font-semibold text-white">Trust Entity</h3>
-
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   Free participant who wants to verify identity, generate a
                   TrustScore, publish a badge, and improve customer confidence.
@@ -119,10 +130,7 @@ export default function IntegratorPortalPage() {
               </div>
 
               <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-5">
-                <h3 className="font-semibold text-cyan-100">
-                  TrustLayer Integrator
-                </h3>
-
+                <h3 className="font-semibold text-cyan-100">TrustLayer Integrator</h3>
                 <p className="mt-2 text-sm leading-6 text-cyan-50">
                   Paying system owner that embeds TrustLayer through SDKs, APIs,
                   webhooks, verification flows, and trust-signaling components.
