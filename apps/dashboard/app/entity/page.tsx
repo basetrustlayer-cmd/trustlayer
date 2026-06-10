@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   DashboardLayout,
+  MetricsGrid,
   PageHeader,
   SectionCard,
   StatCard,
@@ -63,7 +64,10 @@ export default function EntityPortalHomePage() {
 
   return (
     <DashboardLayout>
-      <Link href="/" className="text-sm font-medium text-cyan-200 hover:text-cyan-100">
+      <Link
+        href="/"
+        className="text-sm font-medium text-cyan-200 hover:text-cyan-100"
+      >
         ← Back to Trust Center
       </Link>
 
@@ -75,24 +79,31 @@ export default function EntityPortalHomePage() {
         />
       </div>
 
-      <section className="mt-8 grid gap-4 md:grid-cols-4">
+      <MetricsGrid>
         <StatCard
           label="TrustScore"
           value={profile ? `${profile.trustScore}/100` : "Pending"}
           detail={profile?.band ?? "Awaiting score"}
         />
-        <StatCard label="Entity Type" value="Individual" detail="Can act as buyer or seller" />
+
+        <StatCard
+          label="Entity Type"
+          value="Individual"
+          detail="Can act as buyer or seller"
+        />
+
         <StatCard
           label="Verification"
           value={approvedVerification ? "Approved" : "Pending"}
           detail="Seller-side ready"
         />
+
         <StatCard
           label="Badge"
           value={badge?.status ?? "Pending"}
           detail={badge ? badge.badgeLabel : "Complete verification first"}
         />
-      </section>
+      </MetricsGrid>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <SectionCard
@@ -101,11 +112,16 @@ export default function EntityPortalHomePage() {
         >
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-slate-400">Overall completion</p>
-            <p className="text-3xl font-semibold text-cyan-200">{progress}%</p>
+            <p className="text-3xl font-semibold text-cyan-200">
+              {progress}%
+            </p>
           </div>
 
           <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-cyan-300" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full rounded-full bg-cyan-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
 
           <div className="mt-6 grid gap-3">
@@ -114,7 +130,10 @@ export default function EntityPortalHomePage() {
                 key={step.label}
                 className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/50 p-4"
               >
-                <span className="text-sm text-slate-300">{step.label}</span>
+                <span className="text-sm text-slate-300">
+                  {step.label}
+                </span>
+
                 <StatusBadge color={step.complete ? "emerald" : "amber"}>
                   {step.complete ? "Complete" : "Next"}
                 </StatusBadge>
@@ -149,6 +168,7 @@ export default function EntityPortalHomePage() {
                 className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 transition hover:bg-white/10"
               >
                 <h3 className="font-semibold">{action.title}</h3>
+
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   {action.description}
                 </p>
@@ -161,10 +181,11 @@ export default function EntityPortalHomePage() {
       <section className="mt-6">
         <SectionCard title="Free Entity Access">
           <p className="max-w-3xl text-sm leading-6 text-slate-300">
-            Trust entities do not need a paid trial. Individuals and businesses can
-            maintain a free trust profile because every verified entity strengthens
-            the TrustLayer network. Paid plans are reserved for integrators who use
-            TrustLayer through APIs, SDKs, webhooks, and embedded trust signaling.
+            Trust entities do not need a paid trial. Individuals and businesses
+            can maintain a free trust profile because every verified entity
+            strengthens the TrustLayer network. Paid plans are reserved for
+            integrators who use TrustLayer through APIs, SDKs, webhooks, and
+            embedded trust signaling.
           </p>
         </SectionCard>
       </section>
