@@ -5,7 +5,8 @@ import {
   StatCard,
   StatusBadge,
   TrustScoreCard
-} from "@/components/trustlayer";
+} from "../../components/trustlayer";
+
 import {
   getTrustBadgeByEntityId,
   getTrustProfileByEntityId,
@@ -17,22 +18,26 @@ const entityId = "entity_001";
 const trustActions = [
   {
     title: "Improve TrustScore",
-    description: "Complete verification and add evidence to increase customer confidence.",
+    description:
+      "Complete verification and add evidence to increase customer confidence.",
     href: "/trust-score"
   },
   {
     title: "Manage Verification",
-    description: "Track your identity or business verification package.",
+    description:
+      "Track your identity or business verification package.",
     href: "/verification/requests"
   },
   {
     title: "Publish Trust Badge",
-    description: "Share your verified trust status with customers and counterparties.",
+    description:
+      "Share your verified trust status with customers and counterparties.",
     href: "/certification/badge"
   },
   {
     title: "View Public Profile",
-    description: "Preview how your trust entity appears in the network.",
+    description:
+      "Preview how your trust entity appears in the network.",
     href: "/vendors/entity_001"
   }
 ];
@@ -41,25 +46,49 @@ export default function EntityPortalHomePage() {
   const profile = getTrustProfileByEntityId(entityId);
   const badge = getTrustBadgeByEntityId(entityId);
   const verifications = getVerificationRequestsByEntityId(entityId);
+
   const approvedVerification = verifications.some(
     (verification) => verification.status === "APPROVED"
   );
 
   const entityProgress = [
-    { label: "Create Trust Entity", complete: Boolean(profile) },
-    { label: "Verify Identity", complete: approvedVerification },
-    { label: "Upload Evidence", complete: verifications.length > 0 },
-    { label: "Generate TrustScore", complete: Boolean(profile?.trustScore) },
-    { label: "Publish Trust Badge", complete: badge?.status === "ACTIVE" }
+    {
+      label: "Create Trust Entity",
+      complete: Boolean(profile)
+    },
+    {
+      label: "Verify Identity",
+      complete: approvedVerification
+    },
+    {
+      label: "Upload Evidence",
+      complete: verifications.length > 0
+    },
+    {
+      label: "Generate TrustScore",
+      complete: Boolean(profile?.trustScore)
+    },
+    {
+      label: "Publish Trust Badge",
+      complete: badge?.status === "ACTIVE"
+    }
   ];
 
-  const completedSteps = entityProgress.filter((step) => step.complete).length;
-  const progress = Math.round((completedSteps / entityProgress.length) * 100);
+  const completedSteps = entityProgress.filter(
+    (step) => step.complete
+  ).length;
+
+  const progress = Math.round(
+    (completedSteps / entityProgress.length) * 100
+  );
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <section className="mx-auto max-w-7xl">
-        <Link href="/" className="text-sm font-medium text-cyan-200 hover:text-cyan-100">
+        <Link
+          href="/"
+          className="text-sm font-medium text-cyan-200 hover:text-cyan-100"
+        >
           ← Back to Trust Center
         </Link>
 
@@ -77,16 +106,27 @@ export default function EntityPortalHomePage() {
             value={profile ? `${profile.trustScore}/100` : "Pending"}
             detail={profile?.band ?? "Awaiting score"}
           />
-          <StatCard label="Entity Type" value="Individual" detail="Can act as buyer or seller" />
+
+          <StatCard
+            label="Entity Type"
+            value="Individual"
+            detail="Can act as buyer or seller"
+          />
+
           <StatCard
             label="Verification"
             value={approvedVerification ? "Approved" : "Pending"}
             detail="Seller-side ready"
           />
+
           <StatCard
             label="Badge"
             value={badge?.status ?? "Pending"}
-            detail={badge ? badge.badgeLabel : "Complete verification first"}
+            detail={
+              badge
+                ? badge.badgeLabel
+                : "Complete verification first"
+            }
           />
         </section>
 
@@ -96,12 +136,20 @@ export default function EntityPortalHomePage() {
             description="Complete these steps to increase trust and publish your reputation."
           >
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-slate-400">Overall completion</p>
-              <p className="text-3xl font-semibold text-cyan-200">{progress}%</p>
+              <p className="text-sm text-slate-400">
+                Overall completion
+              </p>
+
+              <p className="text-3xl font-semibold text-cyan-200">
+                {progress}%
+              </p>
             </div>
 
             <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-cyan-300" style={{ width: `${progress}%` }} />
+              <div
+                className="h-full rounded-full bg-cyan-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
 
             <div className="mt-6 grid gap-3">
@@ -110,9 +158,20 @@ export default function EntityPortalHomePage() {
                   key={step.label}
                   className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/50 p-4"
                 >
-                  <span className="text-sm text-slate-300">{step.label}</span>
-                  <StatusBadge color={step.complete ? "emerald" : "amber"}>
-                    {step.complete ? "Complete" : "Next"}
+                  <span className="text-sm text-slate-300">
+                    {step.label}
+                  </span>
+
+                  <StatusBadge
+                    color={
+                      step.complete
+                        ? "emerald"
+                        : "amber"
+                    }
+                  >
+                    {step.complete
+                      ? "Complete"
+                      : "Next"}
                   </StatusBadge>
                 </div>
               ))}
@@ -129,7 +188,8 @@ export default function EntityPortalHomePage() {
           ) : (
             <SectionCard title="TrustScore Pending">
               <p className="text-sm leading-6 text-slate-300">
-                Complete verification to generate your first TrustScore.
+                Complete verification to generate your
+                first TrustScore.
               </p>
             </SectionCard>
           )}
@@ -144,7 +204,10 @@ export default function EntityPortalHomePage() {
                   href={action.href}
                   className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 transition hover:bg-white/10"
                 >
-                  <h3 className="font-semibold">{action.title}</h3>
+                  <h3 className="font-semibold">
+                    {action.title}
+                  </h3>
+
                   <p className="mt-2 text-sm leading-6 text-slate-400">
                     {action.description}
                   </p>
@@ -157,10 +220,13 @@ export default function EntityPortalHomePage() {
         <section className="mt-6">
           <SectionCard title="Free Entity Access">
             <p className="max-w-3xl text-sm leading-6 text-slate-300">
-              Trust entities do not need a paid trial. Individuals and businesses can
-              maintain a free trust profile because every verified entity strengthens
-              the TrustLayer network. Paid plans are reserved for integrators who use
-              TrustLayer through APIs, SDKs, webhooks, and embedded trust signaling.
+              Trust entities do not need a paid trial.
+              Individuals and businesses can maintain a
+              free trust profile because every verified
+              entity strengthens the TrustLayer network.
+              Paid plans are reserved for integrators who
+              use TrustLayer through APIs, SDKs, webhooks,
+              and embedded trust signaling.
             </p>
           </SectionCard>
         </section>
