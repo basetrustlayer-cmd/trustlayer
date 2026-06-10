@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader, SectionCard, StatCard } from "@/components/trustlayer";
+import { PageHeader, SectionCard, StatCard } from "../../components/trustlayer";
 
 const setupSteps = [
   "Start free trial",
